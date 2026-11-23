@@ -73,6 +73,10 @@ Es el comportamiento *fail-closed*: algo no garantiza el aislamiento. Lee las l�
 | Fallos LAN que no tienen sentido | Comprueba que ninguna interfaz de prueba empieza por `plab`. Ejecuta `bash tests/network/linux-diag.sh` y revisa `state/linux-diag.log` |
 | Tras `linux-validation-session.sh`, `start` usa `simlab-h` | El script cambia la configuración de red. Restáurala ([pruebas](../testing/pruebas.md#5-validación-completa-sin-vm)) |
 
+## Windows
+
+Ver [problemas frecuentes en Windows](../installation/windows.md#8-problemas-frecuentes).
+
 ## Volver a un estado conocido
 
 ```bash
@@ -81,4 +85,4 @@ Es el comportamiento *fail-closed*: algo no garantiza el aislamiento. Lee las l�
 scripts/linux/install.sh --phase firewall    # reinstalar y reaplicar el firewall
 ```
 
-Desinstalación completa: [README](../../README.md#6-desactivar-y-desinstalar).
+Desinstalación completa: [guía de desinstalación](../management/desinstalacion.md).

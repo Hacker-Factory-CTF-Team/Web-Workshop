@@ -18,8 +18,8 @@ Los participantes del taller no deberían tener que instalar dependencias adicio
 - El código está en el paquete `src/pentestlab/`. No se llama `manager/`, porque chocaría con el lanzador `./manager`.
 - **Lanzadores finos por plataforma**:
   - `./manager` en Bash, que comprueba la versión de Python;
-  - `manager.ps1` en Windows (pendiente).
-- **Instaladores nativos**: `scripts/linux/install.sh` (Bash) y `scripts/windows/install.ps1` (PowerShell, pendiente). Solo hacen lo que exige el sistema: crear redes del hipervisor, instalar el firewall, etc. El resto lo delegan en el gestor.
+  - `manager.ps1` en Windows.
+- **Instaladores nativos**: `scripts/linux/install.sh` (Bash) y `scripts/windows/install.ps1` (PowerShell). Solo hacen lo que exige el sistema: crear redes del hipervisor, instalar el firewall, etc. El resto lo delegan en el gestor.
 - Todos los mensajes al usuario están en español, con una línea "Cómo solucionarlo" y códigos de salida estables.
 
 ## Alternativas descartadas

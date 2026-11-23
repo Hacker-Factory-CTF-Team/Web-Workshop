@@ -6,11 +6,12 @@
 2. **Hipervisor y red de laboratorio**: elige uno.
    - [KVM/QEMU](kvm.md). **Probado**, recomendado en Linux.
    - [VirtualBox](virtualbox.md). Sin probar con una VM real.
+   - En Windows 11: [windows.md](windows.md), que sustituye a los pasos 1–3. Sin probar.
 3. **Firewall e imágenes**: `scripts/linux/install.sh --phase firewall` y `--phase images` (ver [linux.md](linux.md#4-firewall-e-imágenes)).
 4. **VM de Kali** conectada a la red de laboratorio: está explicado en la guía de cada hipervisor; los ajustes dentro de Kali, en [preparación de Kali](../kali/preparacion.md).
 5. **Primer arranque y verificación**: `./manager start` y las [pruebas de aislamiento](../testing/pruebas.md).
 
-Windows 11 se documentará al final, marcado *no probado*.
+**Windows 11**: guía propia en [windows.md](windows.md) (Docker Desktop + VirtualBox), marcada *no probado*.
 
 ## Qué hace el instalador de Linux
 
@@ -30,4 +31,4 @@ Opciones: `--phase FASE`, `--hypervisor virtualbox|kvm`, `--ip IP`, `--prefix N`
 
 Sin `--phase`, ejecuta `detect` y después pregunta por cada fase en orden.
 
-Todo lo que crea queda anotado en `state/installer.json`, y `--phase uninstall` solo elimina lo anotado ahí. No borra datos de los laboratorios ni imágenes; para eso, ver el [README](../../README.md#6-desactivar-y-desinstalar).
+Todo lo que crea queda anotado en `state/installer.json`, y `--phase uninstall` solo elimina lo anotado ahí. No borra datos de los laboratorios ni imágenes; para eso, ver el [desinstalación](../management/desinstalacion.md).

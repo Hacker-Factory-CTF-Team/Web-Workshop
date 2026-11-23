@@ -1,6 +1,6 @@
 # ADR 0002: salida del proxy, firewall del anfitrión y DNS embebido de Docker
 
-- **Estado:** aceptada (Linux). Windows: pendiente de comprobar con la PoC
+- **Estado:** aceptada. Linux validado; Windows implementado y pendiente de comprobar con la PoC
 - **Fecha:** 2026-11-22
 
 ## Contexto
@@ -58,7 +58,10 @@ Docker Desktop ejecuta los contenedores en su propia VM. Desde el anfitrión no 
 
 - el proxy se mantiene endurecido (ADR 0001) y las aplicaciones siguen en redes internas, sin salida;
 - la salida del proxy se acepta como **riesgo residual documentado**: el gestor la muestra como aviso, no como fallo;
-- el acceso de la LAN se controla con reglas del grupo `PentestLab` del Firewall de Windows;
+- el acceso de la LAN y de Kali se controla con cinco reglas del grupo `PentestLab` del Firewall de Windows ([detalle](../installation/windows.md#5-reglas-del-firewall-de-windows)):
+  - nada que no venga de la subred de laboratorio llega a la IP de laboratorio;
+  - Kali solo alcanza los puertos de los laboratorios y el ping;
+- las reglas se generan desde la configuración (`config firewall-spec`), y el gestor comprueba en cada `start` que las activas coinciden exactamente con esa especificación. Si no coinciden (por ejemplo, tras `set-port`), se bloquea;
 - Windows se entrega marcado *no probado*. La PoC `scripts/windows/poc-network.ps1` debe comprobar también el comportamiento del DNS embebido con `dns: 127.0.0.1` en Docker Desktop.
 
 ## Alternativas descartadas

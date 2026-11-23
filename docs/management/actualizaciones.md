@@ -88,12 +88,12 @@ Por último, ejecuta las [pruebas de red](../testing/pruebas.md) (niveles 3 y 4,
 
 ## 3. Imágenes y digest actuales
 
-Conjunto `2026.11.1`, validado el 2026-11-22:
+Conjunto `2026.11.2`, validado el 2026-11-23 (`2026.11.2`: busybox 1.37.0 → 1.38.0):
 
 | Variable | Imagen | Tag |
 |---|---|---|
 | `EDGE_IMAGE` | `nginx` | `1.30.7-alpine` |
-| `HELPER_IMAGE` | `busybox` | `1.37.0` |
+| `HELPER_IMAGE` | `busybox` | `1.38.0` |
 | `DVWA_IMAGE` | `ghcr.io/digininja/dvwa` | `502ac15` |
 | `DVWA_DB_IMAGE` | `mariadb` | `10.11.19` |
 | `JUICE_SHOP_IMAGE` | `bkimminich/juice-shop` | `v20.4.0` |

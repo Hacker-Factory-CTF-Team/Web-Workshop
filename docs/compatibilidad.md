@@ -12,7 +12,7 @@ Solo se marca como **probado** lo que se ha ejecutado de verdad, y se indica có
 | Debian / Ubuntu | KVM o VirtualBox | No probado | | El instalador reconoce la familia de distribución |
 | Fedora | KVM o VirtualBox | No probado | | Ídem |
 | openSUSE | KVM o VirtualBox | No probado | | Ídem |
-| Windows 11 | VirtualBox + Docker Desktop | No probado | | El instalador de Windows aún no está disponible |
+| Windows 11 | VirtualBox + Docker Desktop | No probado | | Instalador, gestor y PoC de red disponibles: [windows.md](installation/windows.md). Sin ejecutar nunca en Windows; analizados con PSScriptAnalyzer y con pruebas unitarias de las reglas del firewall |
 
 ## Componentes del anfitrión probado
 
@@ -20,10 +20,27 @@ Solo se marca como **probado** lo que se ha ejecutado de verdad, y se indica có
 |---|---|
 | Docker Engine | 29.10.0 (backend `iptables` sobre nf_tables) |
 | Docker Compose | 5.8.0 |
-| Python | 3.10.22 (pruebas unitarias) y la del sistema (gestor) |
+| SO | CachyOS, kernel 7.3.5 |
+| Python | 3.14.10 (gestor) y 3.10.22 (pruebas unitarias en contenedor) |
+| iptables | 1.8.13 (nf_tables) |
 | libvirt | 12.9.0 (demonios modulares) |
-| ufw y Tailscale | Activos durante todas las pruebas |
-| Kali | Imagen oficial para QEMU |
+| `pentestlab-fw` | 1.1.0 |
+| ufw y Tailscale | ufw 0.36.2 y Tailscale, activos durante todas las pruebas |
+| Kali | Imagen oficial para QEMU, con dos adaptadores |
+| Conjunto de versiones | `2026.11.2` ([imágenes](management/actualizaciones.md#3-imágenes-y-digest-actuales)) |
+
+## Validación final (2026-11-23)
+
+| Prueba | Resultado |
+|---|---|
+| Pruebas unitarias y de política (`unittest`) | 80 correctas |
+| ShellCheck (todos los `.sh`) y PSScriptAnalyzer (los `.ps1`, severidad *Warning*) | Sin avisos |
+| CI en GitHub Actions: lint, unit (3.10, 3.12 y 3.13) e integración con red emulada | Todo en verde |
+| Ciclo de vida del gestor con KVM: persistencia, `restart`, `stop` + `start`, `reset-data` (con y sin confirmación), modo efímero, conflicto de puertos, validación de configuración, `logs`, `diagnose` sin secretos, `update --check` y `network-check` | 28/28 |
+| `network-check` con los 4 laboratorios y busybox 1.38.0 en las sondas | 73 comprobaciones, sin fallos |
+| Desde la VM de Kali: `kali-probe.sh --full-scan` (rutas temporales, NAT) y kit `--check --full` | Sin fallos |
+| LAN emulada contra `virbr-plab` (`linux-netns.sh test`) | Sin fallos |
+| Windows 11 | **No probado** (solo análisis estático y pruebas unitarias) |
 
 ## Requisitos mínimos (los aplica el gestor)
 

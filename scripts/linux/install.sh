@@ -165,7 +165,12 @@ phase_deps() {
     fi
     if ! have VBoxManage && ! have virsh; then
         log_warn "no hay hipervisor. Instala VirtualBox (docs/installation/virtualbox.md) o KVM/libvirt (docs/installation/kvm.md)."
-        log_info "KVM: $(pkg_cmd "$( [[ $fam == debian ]] && echo 'qemu-system-x86 libvirt-daemon-system virt-manager' || echo 'qemu-full libvirt virt-manager dnsmasq')")"
+        case $fam in
+            debian) log_info "KVM: $(pkg_cmd qemu-system-x86 libvirt-daemon-system virt-manager)" ;;
+            fedora) log_info "KVM: sudo dnf install -y @virtualization" ;;
+            arch) log_info "KVM: $(pkg_cmd qemu-desktop libvirt virt-manager dnsmasq)" ;;
+            *) log_info "KVM: instala QEMU, libvirt, virt-manager y dnsmasq con el gestor de paquetes de tu distribución" ;;
+        esac
     fi
 }
 

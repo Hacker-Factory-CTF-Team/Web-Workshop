@@ -20,7 +20,9 @@ sudo iptables -S DOCKER-USER | head -5
 sudo iptables -S INPUT | head -5
 cat /proc/sys/net/bridge/bridge-nf-call-iptables
 ./manager stop all
-./manager config set-network --platform linux-virtualbox --ip 192.168.57.1 --prefix 24 --interface simlab-h
+# The session switches config/local.json to the emulated network: keep a copy.
+[[ -f config/local.json ]] && cp config/local.json state/local.json.antes-validacion
+./manager config set-network --platform linux-virtualbox --ip 192.168.57.1 --prefix 24 --interface simlab-h --nat-interface ""
 sudo tests/network/linux-netns.sh cleanup
 sudo tests/network/linux-netns.sh setup-sim || FAILED+=("setup-sim")
 PLAB_SUDOERS=${PLAB_SUDOERS:-yes} ASSUME_YES=1 scripts/linux/install.sh --phase firewall || FAILED+=("install.sh --phase firewall")
@@ -32,6 +34,11 @@ sudo /usr/local/sbin/pentestlab-fw status
 sudo tests/network/linux-netns.sh test || FAILED+=("sudo tests/network/linux-netns.sh test")
 set +x
 echo "=== FIN DE LA SESIÓN ==="
+if [[ -f state/local.json.antes-validacion ]]; then
+    echo "config/local.json apunta ahora a la red emulada (simlab-h). Para volver a tu configuración:"
+    echo "  ./manager stop all && sudo tests/network/linux-netns.sh cleanup"
+    echo "  cp state/local.json.antes-validacion config/local.json && ./manager start"
+fi
 if [[ ${#FAILED[@]} -gt 0 ]]; then
     printf 'FALLARON: %s\n' "${FAILED[@]}"
     exit 1

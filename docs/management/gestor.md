@@ -1,6 +1,6 @@
 # Uso del gestor
 
-`./manager` es el único punto de entrada para manejar los laboratorios:
+`./manager` (en Windows, `.\manager.ps1`) es el único punto de entrada para manejar los laboratorios:
 
 - en Linux es un lanzador Bash que comprueba Python ≥ 3.10 y ejecuta el paquete `src/pentestlab`;
 - usa solo la biblioteca estándar de Python ([ADR 0003](../adr/0003-gestor-python-biblioteca-estandar.md));
@@ -50,6 +50,7 @@ Ver [restauración](restauracion.md) y [actualizaciones](actualizaciones.md).
 | `config set-persistence LAB persistent\|ephemeral` | `./manager config set-persistence dvwa ephemeral` |
 | `config set-resources LAB SERVICIO [--cpus N] [--memory M]` | `./manager config set-resources webgoat webgoat --memory 2g` |
 | `config set-timezone ZONA` | `./manager config set-timezone Europe/Madrid` (o `auto`) |
+| `config firewall-spec` | Muestra en JSON las reglas del Firewall de Windows que corresponden a la configuración actual. Lo usa el instalador de Windows |
 | `config set-network ...` | Lo usa el instalador; no lo necesitas a mano. `--nat-interface virbr0` (o `""` para quitarlo) registra el bridge NAT de Kali en KVM |
 
 Cada cambio se valida antes de guardarse:

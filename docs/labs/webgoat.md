@@ -27,7 +27,7 @@ Usa la **IP de laboratorio también desde el anfitrión**. WebGoat construye los
 |---|---|---|---|---|
 | `edge` | nginx 1.30 (alpine) | Proxy L4, único publicado | 8080, 9090 | `edge`, `front` |
 | `webgoat` | WebGoat | WebGoat y WebWolf (volumen `webgoat-data` en `/data`) | Los mismos que los publicados (8080, 9090) | `front` |
-| `data-init` | busybox 1.37 | Ejecución única: asigna el volumen al usuario 1001 de WebGoat | Ninguno (`network_mode: none`) | Ninguna |
+| `data-init` | busybox 1.38 | Ejecución única: asigna el volumen al usuario 1001 de WebGoat | Ninguno (`network_mode: none`) | Ninguna |
 
 El contenedor escucha en los mismos números de puerto que usa el navegador. Por eso, si cambias un puerto con `set-port`, cambian a la vez el proxy y la aplicación.
 

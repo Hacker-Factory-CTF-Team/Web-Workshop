@@ -10,7 +10,7 @@ La documentación es solo técnica. No incluye soluciones, walkthroughs ni pista
 | | [Linux por distribución](installation/linux.md) |
 | | [KVM/QEMU y VM de Kali](installation/kvm.md) |
 | | [VirtualBox](installation/virtualbox.md) |
-| | Windows 11: pendiente (se documentará al final, marcado *no probado*) |
+| | [Windows 11](installation/windows.md) (*no probado*) |
 | **Red** | [Configuración de red](networking/README.md) |
 | | [Firewall en Linux (`pentestlab-fw`)](networking/firewall-linux.md) |
 | **Kali** | [Preparación de Kali y kit de herramientas](kali/preparacion.md) |
@@ -18,6 +18,7 @@ La documentación es solo técnica. No incluye soluciones, walkthroughs ni pista
 | | [Recursos y límites](management/recursos.md) |
 | | [Restauración de laboratorios](management/restauracion.md) |
 | | [Actualización de aplicaciones](management/actualizaciones.md) |
+| | [Desactivar, desinstalar y dónde va cada cosa](management/desinstalacion.md) |
 | **Aplicaciones** | [DVWA](labs/dvwa.md) · [Juice Shop](labs/juice-shop.md) · [WebGoat + WebWolf](labs/webgoat.md) · [Mutillidae II](labs/mutillidae.md) |
 | **Pruebas** | [Cómo se prueba el laboratorio](testing/pruebas.md) |
 | **Problemas** | [Resolución de problemas](troubleshooting/README.md) |

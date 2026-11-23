@@ -9,6 +9,7 @@ Las pruebas están organizadas por niveles. Los primeros no necesitan root ni re
 | 3 | Lo que ve Kali | `tests/network/kali-probe.sh` dentro de Kali | VM de Kali |
 | 4 | Lo que ve un equipo de la LAN | `sudo tests/network/linux-netns.sh test` | root |
 | 5 | Todo lo anterior sin VM (red emulada) | `bash tests/network/linux-validation-session.sh` | root |
+| W | Comportamiento de red de Docker Desktop en Windows | `scripts\windows\poc-network.ps1` ([detalle](../installation/windows.md#prueba-de-red-poc)) | Windows (administrador para `portproxy`) |
 
 ## 1. Pruebas unitarias y de política
 
@@ -23,7 +24,8 @@ python3 -m unittest discover -s tests -t .
   - `update --check`;
   - la sonda de aislamiento;
   - la validación de la IP de laboratorio;
-  - el menú y el ciclo de vida.
+  - el menú y el ciclo de vida;
+  - las reglas del Firewall de Windows (`test_winfw.py`): la especificación cubre toda la red salvo la subred de laboratorio y todo el rango de puertos, y la verificación entiende el formato real de Windows (máscaras, valores sueltos) y detecta reglas que faltan, duplicadas, desactivadas, desfasadas o ajenas.
 - **`tests/security/`**: ejecutan `docker compose config` sobre los 4 laboratorios reales y les aplican la política. También comprueban que una serie de *overrides* hostiles (puerto en `0.0.0.0`, `privileged`, socket de Docker, `latest`...) se rechazan. No crean contenedores. Se omiten si no está el plugin `docker compose`.
 
 Las pruebas no escriben en el repositorio. Cada error corregido tiene su prueba de regresión.
@@ -116,12 +118,12 @@ bash tests/network/linux-validation-session.sh       # como tu usuario; pide sud
 Guarda todo en `state/linux-validation-session.log` y devuelve un código distinto de 0 si falla un paso crítico.
 
 > [!WARNING]
-> Este script **cambia `config/local.json`** a la red emulada (`linux-virtualbox`, `simlab-h`). Si tenías configurado KVM o VirtualBox, después:
+> Este script **cambia `config/local.json`** a la red emulada (`linux-virtualbox`, `simlab-h`). Antes guarda una copia en `state/local.json.antes-validacion` y, al terminar, indica cómo restaurarla:
 >
 > ```bash
 > ./manager stop all
 > sudo tests/network/linux-netns.sh cleanup
-> scripts/linux/install.sh --phase network --hypervisor kvm   # reutiliza la red existente y restaura la configuración
+> cp state/local.json.antes-validacion config/local.json
 > ./manager start
 > ```
 
@@ -155,7 +157,7 @@ python3 -m compileall -q src
 ```
 
 El workflow de CI (`.github/workflows/ci.yml`) tiene tres jobs:
-- `lint`: `bash -n`, ShellCheck, `compileall` y la validez de los JSON;
+- `lint`: `bash -n`, ShellCheck, `compileall`, la validez de los JSON y PSScriptAnalyzer (severidad *Warning*) sobre los `.ps1`;
 - `unit`: con Python 3.10, 3.12 y 3.13;
 - `integration`: `linux-validation-session.sh` en `ubuntu-latest`.
 
