@@ -1,4 +1,4 @@
-# taller-web: laboratorio local de pentesting web
+# Web-Workshop: laboratorio local de pentesting web
 
 Laboratorio local y aislado para practicar pruebas de seguridad web. Despliega cuatro aplicaciones vulnerables a propósito en Docker. Se atacan desde una máquina virtual de Kali Linux conectada a una red privada entre el anfitrión y la VM:
 
