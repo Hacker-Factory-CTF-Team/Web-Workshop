@@ -1,0 +1,57 @@
+# OWASP Juice Shop
+# Upstream reference: https://github.com/juice-shop/juice-shop#docker-container
+# Run it through ./manager: variables come from state/juice-shop.env (generated).
+#
+# Topology:   [host 127.0.0.1 / LAB_HOST_IP] -> edge -(front)-> juice-shop
+# Juice Shop embeds SQLite + MarsDB and rebuilds its data on every start
+# (upstream design), so it has no auxiliary services and no data volume.
+name: plab-juice-shop
+
+services:
+  edge:
+    extends:
+      file: ../_common/edge/edge.compose.yaml
+      service: edge
+    environment:
+      LAB_HTTP_PORT: ${JUICE_SHOP_PORT:?}
+    volumes:
+      - ./edge.conf.stream-template:/etc/nginx/templates/lab.conf.stream-template:ro
+    ports:
+      - "127.0.0.1:${JUICE_SHOP_PORT}:${JUICE_SHOP_PORT}"
+      - "${LAB_HOST_IP:?LAB_HOST_IP not set}:${JUICE_SHOP_PORT}:${JUICE_SHOP_PORT}"
+    networks: [edge, front]
+    depends_on:
+      juice-shop:
+        condition: service_started
+
+  juice-shop:
+    image: ${JUICE_SHOP_IMAGE:?}
+    networks: [front]
+    restart: "no"
+    read_only: false
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${JUICE_SHOP_CPUS:-1.0}
+    mem_limit: ${JUICE_SHOP_MEMORY:-768m}
+    pids_limit: 256
+    healthcheck:
+      # Distroless image: no shell/curl, use the bundled node binary.
+      test: ["CMD", "/nodejs/bin/node", "-e", "require('http').get('http://127.0.0.1:3000/rest/admin/application-version',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    labels:
+      org.pentestlab.role: app
+
+networks:
+  edge:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: plabe-juice
+  front:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-juice-f

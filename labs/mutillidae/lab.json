@@ -1,0 +1,30 @@
+{
+  "id": "mutillidae",
+  "name": "OWASP Mutillidae II",
+  "description": "Aplicación PHP vulnerable con MariaDB y OpenLDAP",
+  "project": "plab-mutillidae",
+  "images": ["EDGE_IMAGE", "MUTILLIDAE_WWW_IMAGE", "MUTILLIDAE_DB_IMAGE", "MUTILLIDAE_LDAP_IMAGE"],
+  "assets": ["mutillidae-ldif"],
+  "endpoints": {
+    "http": {"default_port": 8081, "env": "MUTILLIDAE_PORT", "scheme": "http", "path": "/", "label": "Mutillidae (HTTP)"},
+    "https": {"default_port": 8443, "env": "MUTILLIDAE_HTTPS_PORT", "scheme": "https", "path": "/", "label": "Mutillidae (HTTPS, certificado autofirmado)"}
+  },
+  "services": {
+    "edge": {"cpus": 0.25, "memory": "64m", "cpus_env": "EDGE_CPUS", "memory_env": "EDGE_MEMORY"},
+    "www": {"cpus": 1.0, "memory": "512m", "cpus_env": "MUTILLIDAE_WWW_CPUS", "memory_env": "MUTILLIDAE_WWW_MEMORY"},
+    "database": {"cpus": 0.5, "memory": "512m", "cpus_env": "MUTILLIDAE_DB_CPUS", "memory_env": "MUTILLIDAE_DB_MEMORY"},
+    "directory": {"cpus": 0.25, "memory": "256m", "cpus_env": "MUTILLIDAE_LDAP_CPUS", "memory_env": "MUTILLIDAE_LDAP_MEMORY"}
+  },
+  "persistence": {"default": "persistent", "supported": ["persistent", "ephemeral"]},
+  "post_start": [
+    {
+      "description": "Inicializar la base de datos de Mutillidae (solo si no existe)",
+      "check": {"service": "database", "command": ["mariadb", "-uroot", "-pmutillidae", "-e", "SELECT 1 FROM mutillidae.accounts LIMIT 1"]},
+      "run": {"type": "http", "endpoint": "http", "path": "/set-up-database.php"}
+    },
+    {
+      "description": "Cargar el directorio LDAP oficial (idempotente)",
+      "run": {"type": "exec", "service": "directory", "command": ["ldapadd", "-c", "-x", "-D", "cn=admin,dc=mutillidae,dc=localhost", "-w", "mutillidae", "-H", "ldap://localhost:389", "-f", "/seed/mutillidae.ldif"], "ok_exit_codes": [0, 68]}
+    }
+  ]
+}

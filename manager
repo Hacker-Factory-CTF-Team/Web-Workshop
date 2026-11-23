@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Entry point of the lab manager on Linux. See ./manager --help
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+py="${PYTHON:-python3}"
+if ! command -v "$py" >/dev/null 2>&1; then
+    echo "ERROR: se necesita Python 3.10 o superior (paquete python3 de tu distribución)." >&2
+    exit 4
+fi
+if ! "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
+    echo "ERROR: $("$py" --version 2>&1) es demasiado antiguo; se necesita Python 3.10 o superior." >&2
+    exit 4
+fi
+PYTHONPATH="$here/src${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m pentestlab "$@"

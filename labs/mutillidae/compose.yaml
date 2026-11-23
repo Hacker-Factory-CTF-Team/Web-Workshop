@@ -1,0 +1,124 @@
+# OWASP Mutillidae II
+# Upstream reference: https://github.com/webpwnized/mutillidae-docker/blob/main/.build/docker-compose.yml
+# Run it through ./manager: variables come from state/mutillidae.env (generated).
+#
+# Topology:
+#   [host 127.0.0.1 / LAB_HOST_IP] -> edge -(front)-> www -(data)-> database
+#                                                        \-(ldap)-> directory
+# The upstream admin consoles (phpMyAdmin, phpLDAPadmin) are intentionally not
+# deployed and neither LDAP nor MySQL are published (docs/adr/0001-arquitectura-proxy-l4-redes-internas.md).
+# Service names "database" and "directory" are hard-coded in the www image.
+name: plab-mutillidae
+
+services:
+  edge:
+    extends:
+      file: ../_common/edge/edge.compose.yaml
+      service: edge
+    environment:
+      LAB_HTTP_PORT: ${MUTILLIDAE_PORT:?}
+      LAB_HTTPS_PORT: ${MUTILLIDAE_HTTPS_PORT:?}
+    volumes:
+      - ./edge.conf.stream-template:/etc/nginx/templates/lab.conf.stream-template:ro
+    ports:
+      - "127.0.0.1:${MUTILLIDAE_PORT}:${MUTILLIDAE_PORT}"
+      - "${LAB_HOST_IP:?LAB_HOST_IP not set}:${MUTILLIDAE_PORT}:${MUTILLIDAE_PORT}"
+      - "127.0.0.1:${MUTILLIDAE_HTTPS_PORT}:${MUTILLIDAE_HTTPS_PORT}"
+      - "${LAB_HOST_IP}:${MUTILLIDAE_HTTPS_PORT}:${MUTILLIDAE_HTTPS_PORT}"
+    networks: [edge, front]
+    depends_on:
+      www:
+        condition: service_started
+
+  www:
+    image: ${MUTILLIDAE_WWW_IMAGE:?}
+    networks: [front, data, ldap]
+    depends_on:
+      database:
+        condition: service_healthy
+      directory:
+        condition: service_started
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${MUTILLIDAE_WWW_CPUS:-1.0}
+    mem_limit: ${MUTILLIDAE_WWW_MEMORY:-512m}
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@file_get_contents(\"http://127.0.0.1/index.php\") === false ? 1 : 0);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    labels:
+      org.pentestlab.role: app
+
+  database:
+    image: ${MUTILLIDAE_DB_IMAGE:?}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks: [data]
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${MUTILLIDAE_DB_CPUS:-0.5}
+    mem_limit: ${MUTILLIDAE_DB_MEMORY:-512m}
+    pids_limit: 256
+    healthcheck:
+      # Image derives from the official mariadb image (healthcheck.sh included).
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    labels:
+      org.pentestlab.role: db
+
+  directory:
+    image: ${MUTILLIDAE_LDAP_IMAGE:?}
+    volumes:
+      - ldap-data:/var/lib/ldap
+      - ldap-config:/etc/ldap/slapd.d
+      # LDIF fetched (pinned + sha256-verified) by `./manager install mutillidae`.
+      - ../../state/mutillidae/mutillidae.ldif:/seed/mutillidae.ldif:ro
+    networks: [ldap]
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${MUTILLIDAE_LDAP_CPUS:-0.25}
+    mem_limit: ${MUTILLIDAE_LDAP_MEMORY:-256m}
+    pids_limit: 256
+    labels:
+      org.pentestlab.role: directory
+
+networks:
+  edge:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: plabe-mutil
+  front:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-mutil-f
+  data:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-mutil-d
+  ldap:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-mutil-l
+
+volumes:
+  db-data:
+    labels:
+      org.pentestlab.data: "true"
+  ldap-data:
+    labels:
+      org.pentestlab.data: "true"
+  ldap-config:
+    labels:
+      org.pentestlab.data: "true"

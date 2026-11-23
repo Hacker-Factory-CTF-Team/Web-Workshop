@@ -1,0 +1,17 @@
+# Machine-specific configuration and generated state
+config/local.json
+state/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Internal working documents (not published)
+doc-diseño.md
+docs/ESTADO-IMPLEMENTACION.md

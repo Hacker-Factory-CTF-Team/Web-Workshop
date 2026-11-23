@@ -1,0 +1,17 @@
+{
+  "_comment": "Defaults shipped with the repo. Do not edit: local changes go to config/local.json (written by ./manager config ... and the installers).",
+  "network": {
+    "platform": "auto",
+    "lab_host_ip": null,
+    "lab_prefix": 24,
+    "lab_interface": null,
+    "defaults_by_platform": {
+      "linux-virtualbox": {"lab_host_ip": "192.168.57.1", "lab_prefix": 24},
+      "linux-kvm": {"lab_host_ip": "192.168.157.1", "lab_prefix": 24, "libvirt_network": "pentestlab", "libvirt_bridge": "virbr-plab"},
+      "windows-virtualbox": {"lab_host_ip": "192.168.57.1", "lab_prefix": 24}
+    }
+  },
+  "timezone": "auto",
+  "start_timeout_seconds": 300,
+  "labs": {}
+}

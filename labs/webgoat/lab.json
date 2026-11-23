@@ -1,0 +1,19 @@
+{
+  "id": "webgoat",
+  "name": "OWASP WebGoat + WebWolf",
+  "description": "Plataforma de lecciones de seguridad (Java/Spring Boot) con WebWolf como servidor auxiliar del atacante",
+  "project": "plab-webgoat",
+  "images": ["EDGE_IMAGE", "HELPER_IMAGE", "WEBGOAT_IMAGE"],
+  "assets": [],
+  "endpoints": {
+    "http": {"default_port": 8080, "env": "WEBGOAT_PORT", "scheme": "http", "path": "/WebGoat/", "label": "WebGoat"},
+    "webwolf": {"default_port": 9090, "env": "WEBWOLF_PORT", "scheme": "http", "path": "/WebWolf/", "label": "WebWolf"}
+  },
+  "prefer_lab_ip": true,
+  "services": {
+    "edge": {"cpus": 0.25, "memory": "64m", "cpus_env": "EDGE_CPUS", "memory_env": "EDGE_MEMORY"},
+    "webgoat": {"cpus": 2.0, "memory": "1536m", "cpus_env": "WEBGOAT_CPUS", "memory_env": "WEBGOAT_MEMORY"}
+  },
+  "persistence": {"default": "persistent", "supported": ["persistent", "ephemeral"]},
+  "post_start": []
+}

@@ -1,0 +1,41 @@
+# Base definition of the per-lab edge proxy. Each lab extends it with:
+#   extends: { file: ../_common/edge/edge.compose.yaml, service: edge }
+# and adds its own ports, template, networks and listener variables.
+#
+# The edge proxy is the ONLY container allowed to publish ports and the only
+# one attached to a non-internal network (Docker does not publish ports from
+# internal-only networks; verified in docs/adr/0001-arquitectura-proxy-l4-redes-internas.md). It is hardened so it
+# cannot be used as a foothold: non-root, read-only rootfs, no capabilities.
+services:
+  edge:
+    image: ${EDGE_IMAGE:?EDGE_IMAGE not set - run the lab through ./manager}
+    user: "101:101"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    # Docker's embedded DNS (127.0.0.11) forwards external queries from the
+    # HOST network namespace, bypassing the firewall (DNS egress/tunnelling).
+    # A loopback upstream is queried from the container's own namespace,
+    # where nothing listens: lab names still resolve, external names do not.
+    dns: ["127.0.0.1"]
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    tmpfs:
+      - /tmp:uid=101,gid=101,mode=0700,size=8m
+      - /etc/nginx/conf.d:uid=101,gid=101,mode=0700,size=1m
+      - /etc/nginx/stream-conf.d:uid=101,gid=101,mode=0700,size=1m
+      - /var/cache/nginx:uid=101,gid=101,mode=0700,size=16m
+    cpus: ${EDGE_CPUS:-0.25}
+    mem_limit: ${EDGE_MEMORY:-64m}
+    pids_limit: 64
+    healthcheck:
+      # Every lab defines LAB_HTTP_PORT (its main listener).
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 $$LAB_HTTP_PORT"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    labels:
+      org.pentestlab.role: edge

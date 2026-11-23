@@ -1,0 +1,12 @@
+# Rendered by the nginx entrypoint (envsubst). Only ${LAB_*} vars are set.
+server {
+    listen ${LAB_HTTP_PORT};
+    set $upstream_webgoat webgoat:${LAB_HTTP_PORT};
+    proxy_pass $upstream_webgoat;
+}
+
+server {
+    listen ${LAB_WEBWOLF_PORT};
+    set $upstream_webwolf webgoat:${LAB_WEBWOLF_PORT};
+    proxy_pass $upstream_webwolf;
+}

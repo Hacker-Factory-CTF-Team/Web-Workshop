@@ -1,0 +1,6 @@
+# Rendered by the nginx entrypoint (envsubst). Only ${LAB_*} vars are set.
+server {
+    listen ${LAB_HTTP_PORT};
+    set $upstream_app dvwa:80;
+    proxy_pass $upstream_app;
+}

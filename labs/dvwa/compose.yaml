@@ -1,0 +1,101 @@
+# DVWA - Damn Vulnerable Web Application
+# Upstream reference: https://github.com/digininja/DVWA/blob/master/compose.yml
+# Run it through ./manager: variables come from state/dvwa.env (generated).
+#
+# Topology:   [host 127.0.0.1 / LAB_HOST_IP] -> edge -(front)-> dvwa -(data)-> db
+#   edge  : networks edge (non-internal, bridge plabe-dvwa) + front
+#   dvwa  : networks front + data   (both internal: no Internet, no host)
+#   db    : network  data only      (no published ports)
+name: plab-dvwa
+
+services:
+  edge:
+    extends:
+      file: ../_common/edge/edge.compose.yaml
+      service: edge
+    environment:
+      LAB_HTTP_PORT: ${DVWA_PORT:?}
+    volumes:
+      - ./edge.conf.stream-template:/etc/nginx/templates/lab.conf.stream-template:ro
+    ports:
+      - "127.0.0.1:${DVWA_PORT}:${DVWA_PORT}"
+      - "${LAB_HOST_IP:?LAB_HOST_IP not set}:${DVWA_PORT}:${DVWA_PORT}"
+    networks: [edge, front]
+    depends_on:
+      dvwa:
+        condition: service_started
+
+  dvwa:
+    image: ${DVWA_IMAGE:?}
+    environment:
+      # Variables read by config/config.inc.php.dist of the upstream image.
+      DB_SERVER: db
+      DB_DATABASE: dvwa
+      DB_USER: dvwa
+      DB_PASSWORD: "p@ssw0rd"
+      DB_PORT: "3306"
+    networks: [front, data]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${DVWA_APP_CPUS:-1.0}
+    mem_limit: ${DVWA_APP_MEMORY:-512m}
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@file_get_contents(\"http://127.0.0.1/login.php\") === false ? 1 : 0);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    labels:
+      org.pentestlab.role: app
+
+  db:
+    image: ${DVWA_DB_IMAGE:?}
+    environment:
+      # Values from the upstream compose.yml (lab-only credentials).
+      MYSQL_ROOT_PASSWORD: dvwa
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: "p@ssw0rd"
+    volumes:
+      - db-data:/var/lib/mysql
+    networks: [data]
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${DVWA_DB_CPUS:-0.5}
+    mem_limit: ${DVWA_DB_MEMORY:-512m}
+    pids_limit: 256
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    labels:
+      org.pentestlab.role: db
+
+networks:
+  edge:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: plabe-dvwa
+  front:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-dvwa-f
+  data:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-dvwa-d
+
+volumes:
+  db-data:
+    labels:
+      org.pentestlab.data: "true"

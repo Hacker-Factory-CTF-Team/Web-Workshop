@@ -1,0 +1,99 @@
+{
+  "_comment": "Tested, pinned version set. Edited ONLY by maintainers after validation (docs/management/actualizaciones.md). Never use 'latest'.",
+  "set_version": "2026.11.1",
+  "validated_on": "2026-11-22",
+  "images": {
+    "EDGE_IMAGE": {
+      "repository": "nginx",
+      "tag": "1.30.7-alpine",
+      "digest": "sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3",
+      "registry": "dockerhub",
+      "tag_pattern": "^1\\.\\d*[02468]\\.\\d+-alpine$",
+      "upstream": "https://hub.docker.com/_/nginx",
+      "used_by": ["dvwa", "juice-shop", "webgoat", "mutillidae"]
+    },
+    "HELPER_IMAGE": {
+      "repository": "busybox",
+      "tag": "1.37.0",
+      "digest": "sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec",
+      "registry": "dockerhub",
+      "tag_pattern": "^1\\.\\d+\\.\\d+$",
+      "upstream": "https://hub.docker.com/_/busybox",
+      "used_by": ["webgoat", "_probe"]
+    },
+    "DVWA_IMAGE": {
+      "repository": "ghcr.io/digininja/dvwa",
+      "tag": "502ac15",
+      "digest": "sha256:61167ec23fbf861f7d96a7beb4be3612d043d48dbc6b239d4f90d7e8cdff8115",
+      "registry": "ghcr",
+      "tag_pattern": "^[0-9a-f]{7}$",
+      "upstream": "https://github.com/digininja/DVWA",
+      "notes": "Upstream only publishes 'latest' and short-commit tags; pinned by commit tag + digest.",
+      "used_by": ["dvwa"]
+    },
+    "DVWA_DB_IMAGE": {
+      "repository": "mariadb",
+      "tag": "10.11.19",
+      "digest": "sha256:e5fe75b2b9de0eb9f6f9a4d9c97272fb3a7480e389ccd487a786bab2a12cc0d7",
+      "registry": "dockerhub",
+      "tag_pattern": "^10\\.11\\.\\d+$",
+      "upstream": "https://hub.docker.com/_/mariadb",
+      "notes": "Upstream DVWA compose uses mariadb:10; 10.11 is the 10.x LTS branch.",
+      "used_by": ["dvwa"]
+    },
+    "JUICE_SHOP_IMAGE": {
+      "repository": "bkimminich/juice-shop",
+      "tag": "v20.4.0",
+      "digest": "sha256:9bbaecc41791f00b002bc65931cc5ff355fbdb941fa72b06558c18dace43197b",
+      "registry": "dockerhub",
+      "tag_pattern": "^v\\d+\\.\\d+\\.\\d+$",
+      "upstream": "https://github.com/juice-shop/juice-shop",
+      "used_by": ["juice-shop"]
+    },
+    "WEBGOAT_IMAGE": {
+      "repository": "webgoat/webgoat",
+      "tag": "v2026.5",
+      "digest": "sha256:95c23e70502d0e0e11a826a73889e2ca93f965171202c17c0c59353ba67be86a",
+      "registry": "dockerhub",
+      "tag_pattern": "^v\\d{4}\\.\\d+(\\.\\d+)?$",
+      "upstream": "https://github.com/WebGoat/WebGoat",
+      "used_by": ["webgoat"]
+    },
+    "MUTILLIDAE_WWW_IMAGE": {
+      "repository": "webpwnized/mutillidae",
+      "tag": "www-2.12.7",
+      "digest": "sha256:71c1e63420311da0d4561a2592afdb1a12ac28c58d2307d3c0aa7844f9b30441",
+      "registry": "dockerhub",
+      "tag_pattern": "^www-\\d+\\.\\d+\\.\\d+$",
+      "upstream": "https://github.com/webpwnized/mutillidae-docker",
+      "used_by": ["mutillidae"]
+    },
+    "MUTILLIDAE_DB_IMAGE": {
+      "repository": "webpwnized/mutillidae",
+      "tag": "database-2.12.7",
+      "digest": "sha256:bd79b51b9a29eb852b2f85bed2629407df6355d7f729b66913e0abe1b7a99ed6",
+      "registry": "dockerhub",
+      "tag_pattern": "^database-\\d+\\.\\d+\\.\\d+$",
+      "upstream": "https://github.com/webpwnized/mutillidae-docker",
+      "used_by": ["mutillidae"]
+    },
+    "MUTILLIDAE_LDAP_IMAGE": {
+      "repository": "webpwnized/mutillidae",
+      "tag": "ldap-2.12.7",
+      "digest": "sha256:51d9e8c39aaa3f7670f52601d14bd6d30c2f83aabb390ad3b00484bbf8ce701e",
+      "registry": "dockerhub",
+      "tag_pattern": "^ldap-\\d+\\.\\d+\\.\\d+$",
+      "upstream": "https://github.com/webpwnized/mutillidae-docker",
+      "used_by": ["mutillidae"]
+    }
+  },
+  "assets": {
+    "mutillidae-ldif": {
+      "url": "https://raw.githubusercontent.com/webpwnized/mutillidae-docker/b5920113ad30/.build/ldap/configuration/ldif/mutillidae.ldif",
+      "sha256": "82eb3b46b63463f978f887d5a427e96af7058d005e5449a1420bdd574c16d2e5",
+      "dest": "state/mutillidae/mutillidae.ldif",
+      "license": "GPL-3.0 (downloaded at install time, not redistributed)",
+      "used_by": ["mutillidae"]
+    }
+  }
+}

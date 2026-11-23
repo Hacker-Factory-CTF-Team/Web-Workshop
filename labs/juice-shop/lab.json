@@ -1,0 +1,21 @@
+{
+  "id": "juice-shop",
+  "name": "OWASP Juice Shop",
+  "description": "Tienda web moderna vulnerable (Node.js/Angular/SQLite)",
+  "project": "plab-juice-shop",
+  "images": ["EDGE_IMAGE", "JUICE_SHOP_IMAGE"],
+  "assets": [],
+  "endpoints": {
+    "http": {"default_port": 3000, "env": "JUICE_SHOP_PORT", "scheme": "http", "path": "/", "label": "Juice Shop"}
+  },
+  "services": {
+    "edge": {"cpus": 0.25, "memory": "64m", "cpus_env": "EDGE_CPUS", "memory_env": "EDGE_MEMORY"},
+    "juice-shop": {"cpus": 1.0, "memory": "768m", "cpus_env": "JUICE_SHOP_CPUS", "memory_env": "JUICE_SHOP_MEMORY"}
+  },
+  "persistence": {
+    "default": "ephemeral",
+    "supported": ["ephemeral"],
+    "note": "Juice Shop regenera su base de datos en cada arranque (diseño upstream). El progreso solo puede conservarse con la función oficial de 'continue code' de la propia aplicación."
+  },
+  "post_start": []
+}

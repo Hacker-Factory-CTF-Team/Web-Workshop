@@ -1,0 +1,96 @@
+# OWASP WebGoat + WebWolf (single upstream image runs both applications)
+# Upstream reference: https://github.com/WebGoat/WebGoat#1-run-using-docker
+# Run it through ./manager: variables come from state/webgoat.env (generated).
+#
+# Topology:   [host 127.0.0.1 / LAB_HOST_IP] -> edge -(front)-> webgoat (WebGoat + WebWolf)
+#
+# WebGoat builds absolute links to itself and to WebWolf from
+# WEBGOAT_HOST/WEBGOAT_PORT and WEBWOLF_HOST/WEBWOLF_PORT, so the container
+# listens on the same port numbers the browser uses and the hosts are set to
+# the lab IP (reachable both from Kali and from the host itself).
+name: plab-webgoat
+
+services:
+  edge:
+    extends:
+      file: ../_common/edge/edge.compose.yaml
+      service: edge
+    environment:
+      LAB_HTTP_PORT: ${WEBGOAT_PORT:?}
+      LAB_WEBWOLF_PORT: ${WEBWOLF_PORT:?}
+    volumes:
+      - ./edge.conf.stream-template:/etc/nginx/templates/lab.conf.stream-template:ro
+    ports:
+      - "127.0.0.1:${WEBGOAT_PORT}:${WEBGOAT_PORT}"
+      - "${LAB_HOST_IP:?LAB_HOST_IP not set}:${WEBGOAT_PORT}:${WEBGOAT_PORT}"
+      - "127.0.0.1:${WEBWOLF_PORT}:${WEBWOLF_PORT}"
+      - "${LAB_HOST_IP}:${WEBWOLF_PORT}:${WEBWOLF_PORT}"
+    networks: [edge, front]
+    depends_on:
+      webgoat:
+        condition: service_started
+
+  # One-shot helper: a fresh named volume is root-owned; WebGoat runs as
+  # uid 1001. Runs without network and exits.
+  data-init:
+    image: ${HELPER_IMAGE:?}
+    command: ["sh", "-c", "chown 1001:0 /data && chmod 0770 /data"]
+    network_mode: none
+    volumes:
+      - webgoat-data:/data
+    restart: "no"
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      org.pentestlab.role: init
+
+  webgoat:
+    image: ${WEBGOAT_IMAGE:?}
+    environment:
+      WEBGOAT_HOST: ${LAB_HOST_IP}
+      WEBGOAT_PORT: ${WEBGOAT_PORT}
+      WEBWOLF_HOST: ${LAB_HOST_IP}
+      WEBWOLF_PORT: ${WEBWOLF_PORT}
+      TZ: ${LAB_TZ:-Europe/Madrid}
+      # Spring relaxed binding of webgoat.server.directory / webgoat.user.directory
+      WEBGOAT_SERVER_DIRECTORY: /data/
+      WEBGOAT_USER_DIRECTORY: /data/
+    volumes:
+      - webgoat-data:/data
+    networks: [front]
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+    restart: "no"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    cpus: ${WEBGOAT_CPUS:-2.0}
+    mem_limit: ${WEBGOAT_MEMORY:-1536m}
+    pids_limit: 512
+    healthcheck:
+      # Upstream HEALTHCHECK calls curl, which the image does not ship.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/$${WEBGOAT_PORT} && exec 4<>/dev/tcp/127.0.0.1/$${WEBWOLF_PORT}"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    labels:
+      org.pentestlab.role: app
+
+networks:
+  edge:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: plabe-wgoat
+  front:
+    internal: true
+    driver: bridge
+    driver_opts:
+      # Fixed name: the Linux host firewall matches plab* bridges.
+      com.docker.network.bridge.name: plabi-wgoat-f
+
+volumes:
+  webgoat-data:
+    labels:
+      org.pentestlab.data: "true"

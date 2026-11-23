@@ -1,0 +1,13 @@
+# Rendered by the nginx entrypoint (envsubst). Only ${LAB_*} vars are set.
+# HTTPS is forwarded as raw TCP: TLS terminates in the Mutillidae container.
+server {
+    listen ${LAB_HTTP_PORT};
+    set $upstream_http www:80;
+    proxy_pass $upstream_http;
+}
+
+server {
+    listen ${LAB_HTTPS_PORT};
+    set $upstream_https www:443;
+    proxy_pass $upstream_https;
+}

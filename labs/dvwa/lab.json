@@ -1,0 +1,73 @@
+{
+  "id": "dvwa",
+  "name": "DVWA",
+  "description": "Damn Vulnerable Web Application (PHP/MariaDB)",
+  "project": "plab-dvwa",
+  "images": [
+    "EDGE_IMAGE",
+    "DVWA_IMAGE",
+    "DVWA_DB_IMAGE"
+  ],
+  "assets": [],
+  "endpoints": {
+    "http": {
+      "default_port": 4280,
+      "env": "DVWA_PORT",
+      "scheme": "http",
+      "path": "/",
+      "label": "DVWA"
+    }
+  },
+  "services": {
+    "edge": {
+      "cpus": 0.25,
+      "memory": "64m",
+      "cpus_env": "EDGE_CPUS",
+      "memory_env": "EDGE_MEMORY"
+    },
+    "dvwa": {
+      "cpus": 1.0,
+      "memory": "512m",
+      "cpus_env": "DVWA_APP_CPUS",
+      "memory_env": "DVWA_APP_MEMORY"
+    },
+    "db": {
+      "cpus": 0.5,
+      "memory": "512m",
+      "cpus_env": "DVWA_DB_CPUS",
+      "memory_env": "DVWA_DB_MEMORY"
+    }
+  },
+  "persistence": {
+    "default": "persistent",
+    "supported": [
+      "persistent",
+      "ephemeral"
+    ]
+  },
+  "post_start": [
+    {
+      "description": "Crear la base de datos de DVWA con sus usuarios por defecto (solo si no existe)",
+      "check": {
+        "service": "db",
+        "command": [
+          "mariadb",
+          "-udvwa",
+          "-pp@ssw0rd",
+          "dvwa",
+          "-e",
+          "SELECT 1 FROM users LIMIT 1"
+        ]
+      },
+      "run": {
+        "type": "exec",
+        "service": "dvwa",
+        "command": [
+          "sh",
+          "-c",
+          "set -e; j=$(mktemp); t=$(curl -fsS -c \"$j\" http://127.0.0.1/setup.php | sed -n \"s/.*name='user_token' value='\\([0-9a-f]*\\)'.*/\\1/p\" | head -n1); [ -n \"$t\" ]; curl -fsS -b \"$j\" -o /dev/null --data-urlencode create_db=1 --data-urlencode user_token=\"$t\" http://127.0.0.1/setup.php; rm -f \"$j\""
+        ]
+      }
+    }
+  ]
+}
