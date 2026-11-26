@@ -55,21 +55,53 @@ Más detalle: [configuración de red](docs/networking/README.md) y las decisione
 
 ### Linux con KVM (probado)
 
+Comandos para Arch / CachyOS. En otras distribuciones cambian los paquetes: consulta las guías enlazadas debajo.
+
 ```bash
-# 1. Docker Engine >= 28 y KVM/libvirt instalados (ver guías), y este repositorio clonado
-# 2. Instalador guiado: ejecútalo como tu usuario, NUNCA con sudo
+# 1. Paquetes: Docker, KVM/libvirt y utilidades
+sudo pacman -S --needed docker docker-compose python iproute2 iptables curl \
+    qemu-desktop libvirt virt-manager dnsmasq 7zip
+
+# 2. Servicios y grupos
+sudo systemctl enable --now docker
+sudo systemctl enable --now virtqemud.socket virtnetworkd.socket virtstoraged.socket virtnodedevd.socket virtlogd.socket
+sudo usermod -aG docker,libvirt "$USER"
+# -> cierra sesión y vuelve a entrar para que los grupos tengan efecto
+
+# 3. Comprobaciones
+docker info --format '{{.FirewallBackend.Driver}}'   # debe decir iptables
+virsh -c qemu:///system net-list --all               # debe responder sin error
+
+# 4. Instalador guiado, desde la carpeta del repositorio: como tu usuario, NUNCA con sudo
+#    (red 'pentestlab', firewall 'pentestlab-fw' e imágenes, ~5 GB)
 scripts/linux/install.sh --hypervisor kvm
 
-# 3. Crea la VM de Kali con dos adaptadores (red 'pentestlab' + red 'default')
-#    -> docs/installation/kvm.md#3-vm-de-kali
+# 5. VM de Kali: descarga la imagen QEMU de https://www.kali.org/get-kali/#kali-virtual-machines
+#    y comprueba su SHA-256 con el publicado en esa página
+sha256sum kali-linux-*-qemu-amd64.7z
+7z x kali-linux-*-qemu-amd64.7z
+sudo mv kali-linux-*-qemu-amd64.qcow2 /var/lib/libvirt/images/kali-plab.qcow2
+virt-install --connect qemu:///system --name kali-plab \
+  --memory 4096 --vcpus 2 --import \
+  --disk /var/lib/libvirt/images/kali-plab.qcow2,bus=virtio \
+  --osinfo linux2022 \
+  --network network=pentestlab,model=virtio \
+  --network network=default,model=virtio \
+  --graphics spice --video virtio --channel spicevmc \
+  --noautoconsole
 
-# 4. Arranca los laboratorios (comprueba el aislamiento antes de exponer nada)
+# 6. Arranca los laboratorios (comprueba el aislamiento antes de exponer nada)
 ./manager start
+./manager network-check
+./manager status                                     # URL de cada aplicación
 
-# 5. Dentro de Kali: herramientas y comprobación de conectividad
+# 7. Dentro de Kali (usuario/contraseña: kali/kali), con este repositorio clonado
+#    o copiadas las carpetas kali/ y tests/network/: herramientas y conectividad
 kali/install.sh --install all
 kali/install.sh --check --full
 ```
+
+Con 8–14 GiB de RAM, arranca solo los laboratorios que vayas a usar: `./manager start dvwa juice-shop`.
 
 Paso a paso: [Linux por distribución](docs/installation/linux.md) → [KVM y VM de Kali](docs/installation/kvm.md) → [Preparación de Kali](docs/kali/preparacion.md).
 
