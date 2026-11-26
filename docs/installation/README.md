@@ -31,4 +31,4 @@ Opciones: `--phase FASE`, `--hypervisor virtualbox|kvm`, `--ip IP`, `--prefix N`
 
 Sin `--phase`, ejecuta `detect` y después pregunta por cada fase en orden.
 
-Todo lo que crea queda anotado en `state/installer.json`, y `--phase uninstall` solo elimina lo anotado ahí. No borra datos de los laboratorios ni imágenes; para eso, ver el [desinstalación](../management/desinstalacion.md).
+Todo lo que crea queda anotado en `state/installer.json`, y `--phase uninstall` solo elimina lo anotado ahí. No borra datos de los laboratorios ni imágenes; para eso, ver la [guía de desinstalación](../management/desinstalacion.md#4-borrar-datos-imágenes-y-configuración).

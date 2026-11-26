@@ -104,6 +104,8 @@ tool=wfuzz|wfuzz|wfuzz python3-wfuzz
 
 Los comentarios van siempre en su propia línea, empezando por `#`.
 
+Para proponer una herramienta nueva para el taller, abre un Pull Request con el cambio en el módulo correspondiente o una Issue *Mejora* si prefieres que lo haga otra persona ([CONTRIBUTING](../../CONTRIBUTING.md)).
+
 Probado el 2026-11-23 en la VM de Kali real (KVM): `--install all`, la repetición sin reinstalar, el menú y `--check --full`. También en un contenedor `kalilinux/kali-rolling`: instalación, no duplicación, actualización, nombre alternativo, paquete inexistente, módulo desconocido, menú y `--check`. Todos los paquetes tienen candidato en `kali-rolling`.
 
 ## 4. Verificar

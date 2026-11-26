@@ -11,7 +11,7 @@
 
 Todos los errores del gestor terminan con una línea **"Cómo solucionarlo"**. El código de salida indica el tipo de problema ([códigos](../management/gestor.md#5-códigos-de-salida)).
 
-Si pides ayuda, adjunta la salida de `./manager diagnose`.
+Si no encuentras la solución aquí, abre una Issue con la plantilla [*Informe de error*](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/issues/new/choose) y adjunta la salida de `./manager diagnose`. No contiene secretos, pero sí las IP de tus interfaces de red: revísala antes de publicarla. Si el problema rompe el aislamiento, no lo publiques: sigue la [política de seguridad](../../SECURITY.md).
 
 ## Instalación
 

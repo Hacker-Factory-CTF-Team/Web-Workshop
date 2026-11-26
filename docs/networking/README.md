@@ -86,6 +86,7 @@ Reglas para la IP de laboratorio (las aplican el instalador y el gestor):
 - Cámbialos con `./manager config set-port LAB ENDPOINT PUERTO` (rango 1024–65535, sin repetir entre laboratorios).
 - Solo se publica TCP.
 - Si al arrancar un puerto está ocupado, el gestor muestra el proceso y propone otro; nunca lo cambia sin permiso. Ver [uso del gestor](../management/gestor.md#4-conflictos-de-puertos).
+- Los scripts que se ejecutan en Kali asumen los puertos por defecto: `kali/install.sh --check` admite `--ports` para otros, pero `tests/network/kali-probe.sh` no ([detalle](../testing/pruebas.md#3-desde-la-vm-de-kali)).
 
 ## 4. Redes Docker de cada laboratorio
 

@@ -1,0 +1,13 @@
+# Blank issues stay enabled: SECURITY.md asks for a detail-free blank issue to
+# request a private channel, and some ideas do not fit any template.
+blank_issues_enabled: true
+contact_links:
+  - name: Problema de seguridad del laboratorio
+    url: https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/SECURITY.md
+    about: Si algo rompe el aislamiento (redes, puertos, firewall), no lo publiques en una Issue. Sigue la política de seguridad.
+  - name: Guía de contribución
+    url: https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/CONTRIBUTING.md
+    about: Cómo proponer cambios, qué se evalúa y cómo preparar un Pull Request.
+  - name: Resolución de problemas
+    url: https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/docs/troubleshooting/README.md
+    about: Antes de abrir un informe de error, revisa los problemas habituales y sus soluciones.

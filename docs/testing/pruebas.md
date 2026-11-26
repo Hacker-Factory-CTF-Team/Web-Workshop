@@ -86,6 +86,9 @@ Qué comprueba:
 
 Las rutas temporales simulan a alguien que intenta usar el anfitrión como router por la red de laboratorio. Sin ellas, con la NIC NAT, ese tráfico saldría por el NAT y la prueba no demostraría nada.
 
+> [!NOTE]
+> `kali-probe.sh` comprueba siempre los **6 puertos por defecto** (4280, 3000, 8080, 9090, 8081 y 8443) y no tiene opción para cambiarlos. Si has cambiado algún puerto con `./manager config set-port`, sus resultados sobre los puertos del laboratorio y `--full-scan` no son fiables. `kali/install.sh --check` sí admite `--ports P,P,...`.
+
 En los bloqueos, *rechazado* (RST) y *sin respuesta* (filtrado) cuentan los dos como correctos. Lo esperado es *sin respuesta*, porque el firewall descarta los paquetes. El script termina con código 0 solo si no hay ningún fallo.
 
 ## 4. LAN emulada
@@ -150,11 +153,13 @@ Está pensado para la red emulada (usa la netns `plab-kali`).
 ## 7. Calidad del código
 
 ```bash
-# ShellCheck sin instalarlo (imagen oficial, sin red y en solo lectura)
+# ShellCheck sin instalarlo (imagen oficial, sin red y en solo lectura), con los mismos archivos que el CI
 docker run --rm --network none -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.11.0 \
-  --severity=warning manager scripts/*/*.sh tests/network/*.sh
-python3 -m compileall -q src
+  --severity=warning --external-sources $(git ls-files '*.sh') manager
+python3 -m compileall -q src tests
 ```
+
+El resto de comprobaciones del job `lint` (sintaxis Bash y validez de los JSON) están en la [guía de desarrollo](../development/README.md#validación-rápida).
 
 El workflow de CI (`.github/workflows/ci.yml`) tiene tres jobs:
 - `lint`: `bash -n`, ShellCheck, `compileall`, la validez de los JSON y PSScriptAnalyzer (severidad *Warning*) sobre los `.ps1`;
@@ -169,4 +174,9 @@ El workflow de CI (`.github/workflows/ci.yml`) tiene tres jobs:
 | `compose.yaml`, `lab.json` o `versions.json` | Niveles 1 y 2, y el arranque del laboratorio afectado |
 | `pentestlab-fw.sh` o el instalador | Niveles 1–4 (o 5) y ShellCheck; reinstalar el firewall |
 | Nueva versión de una aplicación | [Procedimiento de actualización](../management/actualizaciones.md) |
+| Nuevo laboratorio | [Validación de la guía](../development/nuevo-laboratorio.md#6-validación) |
+| Scripts de Windows | Nivel 1 (`test_winfw.py`) y PSScriptAnalyzer; nivel W si tienes Windows |
+| Solo documentación | Enlaces internos y que lo descrito coincide con el código |
 | Nuevo equipo o hipervisor | Niveles 2–4 y anotar el resultado en la [matriz](../compatibilidad.md) |
+
+Las invariantes que protegen estas pruebas están en [invariantes de seguridad](../architecture/invariantes-seguridad.md).

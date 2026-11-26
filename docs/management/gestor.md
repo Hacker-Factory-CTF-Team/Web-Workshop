@@ -14,7 +14,7 @@ No uses `docker compose up` directamente en `labs/<lab>/`. Te saltarías las com
 ./manager [--yes] COMANDO [opciones]
 ```
 
-`LAB` es `dvwa`, `juice-shop`, `webgoat`, `mutillidae` o `all`. Si no indicas ninguno, se aplica a todos.
+`LAB` es `dvwa`, `juice-shop`, `webgoat`, `mutillidae` o `all`. Si no indicas ninguno, se aplica a todos. También se aceptan los alias `juice` y `juiceshop` (Juice Shop), `webwolf` (WebGoat) y `mutillidae2`.
 
 ### Información
 

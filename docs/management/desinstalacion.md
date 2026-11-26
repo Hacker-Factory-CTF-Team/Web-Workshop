@@ -70,24 +70,17 @@ Por último, borra la carpeta del repositorio y la VM de Kali ([KVM](../installa
 
 ### En el repositorio
 
+Lo que se genera en tu copia del repositorio y no se versiona:
+
 ```text
-manager / manager.ps1          punto de entrada del gestor (Linux / Windows)
-config/defaults.json           valores por defecto (no editar)
-config/versions.json           versiones probadas: imagen + tag + digest, recursos con SHA-256
-config/local.json              tu configuración (generado; no se versiona)
-labs/_common/edge/             proxy nginx L4 común y endurecido
-labs/<lab>/                    compose.yaml, plantilla del proxy y lab.json (puertos, límites, ganchos)
-src/pentestlab/                gestor (Python, solo biblioteca estándar)
-scripts/linux/install.sh       instalador por fases (Linux)
-scripts/linux/pentestlab-fw.sh reglas del firewall (fuente de /usr/local/sbin/pentestlab-fw)
-scripts/windows/install.ps1    instalador por fases (Windows)
-scripts/windows/poc-network.ps1  prueba de red de Docker Desktop
-scripts/common/lib.sh          utilidades Bash compartidas
-kali/                          kit de herramientas para la VM de Kali (install.sh + modules/*.conf)
-tests/                         pruebas unitarias, de política y de red
-docs/                          documentación técnica
-state/                         generado (no se versiona): <lab>.env, LDIF de Mutillidae, registros, installer.json
+config/local.json              tu configuración: red, puertos, persistencia, límites y zona horaria
+state/<lab>.env                variables para Compose (se regeneran en cada operación)
+state/mutillidae/              LDIF de Mutillidae descargado y verificado
+state/installer.json           lo que ha creado el instalador (para --phase uninstall)
+state/*.log                    registros de las pruebas de red
 ```
+
+El mapa completo del repositorio está en la [guía de desarrollo](../development/README.md#2-mapa-del-repositorio).
 
 ### Fuera del repositorio
 
