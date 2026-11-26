@@ -2,6 +2,13 @@
 # Shared helpers for the Linux installer, the Kali kit and the test scripts.
 # Source it; do not execute it.
 
+# Ensure standard administrative binary paths are available in PATH
+# (distributions like openSUSE or Debian omit /sbin and /usr/sbin for regular users)
+for _p in /usr/local/sbin /usr/sbin /sbin; do
+    [[ -d "$_p" && ":$PATH:" != *":$_p:"* ]] && export PATH="$PATH:$_p"
+done
+unset _p
+
 if [[ -t 1 && -z ${NO_COLOR:-} ]]; then
     _C_RED=$'\033[31m'; _C_GRN=$'\033[32m'; _C_YLW=$'\033[33m'; _C_BLU=$'\033[1;34m'; _C_RST=$'\033[0m'
 else
