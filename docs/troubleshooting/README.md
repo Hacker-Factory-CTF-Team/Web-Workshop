@@ -63,6 +63,7 @@ Es el comportamiento *fail-closed*: algo no garantiza el aislamiento. Lee las l�
 | WebGoat no enlaza bien con WebWolf | Entra por la IP de laboratorio, no por `127.0.0.1` ([ficha](../labs/webgoat.md#acceso)) |
 | Kali no tiene Internet (KVM) | `eth1` sin IP o sin ruta: el NAT depende de las reglas de `pentestlab-fw`, que se aplican en `./manager start` ([kvm.md](../installation/kvm.md#5-problemas-frecuentes)) |
 | Kali tiene la ruta por defecto por la red de laboratorio | La red anuncia pasarela (versión antigua del instalador): repite la fase `network` con Kali apagada. En VirtualBox: `nmcli ... ipv4.never-default yes` ([virtualbox.md](../installation/virtualbox.md#3-vm-de-kali)) |
+| `kali-probe.sh` (VirtualBox): `FALLO anfitrión vía NAT (10.0.3.2:N) ACCESIBLE` | El NAT de VirtualBox da a Kali acceso al `127.0.0.1` del anfitrión. No rompe el aislamiento respecto a la LAN ni bloquea el laboratorio, pero expone los servicios locales del anfitrión a Kali. Con la VM apagada: `VBoxManage modifyvm "<VM>" --nat-localhostreachable2 off` ([detalle](../installation/virtualbox.md#nat-de-kali-y-servicios-locales-del-anfitrión)) |
 | Aviso de certificado en Mutillidae HTTPS | Es normal: el certificado es autofirmado |
 
 ## Pruebas de red

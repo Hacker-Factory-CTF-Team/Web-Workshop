@@ -81,7 +81,7 @@ Qué comprueba:
 | Puertos del laboratorio | Los 6 responden por HTTP y hay ping al anfitrión |
 | Servicios del anfitrión en la red de laboratorio | Bloqueados: 53, 22, 80, 111, 443, 631, 1716, 5355, 8000 y 11434 |
 | El anfitrión como router | Añade rutas /32 temporales **a través de la IP de laboratorio del anfitrión** hacia 1.1.1.1, 9.9.9.9, `--lan` y `--host-lan`, y comprueba que no pasa nada: TCP, ping y DNS por UDP (con `dig`). Las rutas se quitan al terminar, también si se interrumpe |
-| Servicios del anfitrión por la NIC NAT | Bloqueados en la pasarela NAT y en `--host-lan` (KVM: lo garantiza `pentestlab-fw`; VirtualBox: ver [riesgo residual](../installation/virtualbox.md#4-particularidades)) |
+| Servicios del anfitrión por la NIC NAT | Bloqueados en la pasarela NAT y en `--host-lan` (KVM: lo garantiza `pentestlab-fw`. VirtualBox: un FALLO aquí se corrige en la VM, no en el laboratorio, ver [NAT de Kali](../installation/virtualbox.md#nat-de-kali-y-servicios-locales-del-anfitrión)) |
 | `--full-scan` | Solo los 6 puertos del laboratorio abiertos en la IP de laboratorio |
 
 Las rutas temporales simulan a alguien que intenta usar el anfitrión como router por la red de laboratorio. Sin ellas, con la NIC NAT, ese tráfico saldría por el NAT y la prueba no demostraría nada.
