@@ -92,6 +92,8 @@ Si un cambio de puerto no es válido, el menú lo revierte y no deja nada a medi
 
 ## 3. Qué hace `start`
 
+La misma secuencia, en diagrama: [arquitectura](../architecture/README.md#qué-hace-start). Los estados que muestra `status` y cómo se pasa de uno a otro: [estados de un laboratorio](../architecture/README.md#estados-de-un-laboratorio).
+
 1. **Preflight (fail-closed):**
    - no estar en WSL;
    - Docker ≥ 28 y Compose ≥ 2.24;

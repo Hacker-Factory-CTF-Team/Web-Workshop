@@ -37,13 +37,26 @@ No todas las contribuciones son código, y **no todas tienen que ser Pull Reques
 
 ```mermaid
 flowchart LR
-    A["Buscar Issues<br/>existentes"] --> B["Abrir o comentar<br/>una Issue"]
-    B --> C["Fork o rama"]
-    C --> D["Implementar"]
-    D --> E["Pruebas"]
-    E --> F["Pull Request"]
-    F --> G["Revisión y<br/>comentarios"]
-    G --> H["Fusión en main"]
+    A["Buscar Issues<br/>existentes"]:::ext --> B["Abrir o comentar<br/>una Issue"]:::mgr
+    B --> C["Fork o rama"]:::mgr
+    C --> D["Implementar"]:::mgr
+    D --> E["Pruebas"]:::mgr
+    E --> F["Pull Request"]:::mgr
+    F --> G{"CI y<br/>revisión"}:::edge
+    G -- "cambios pedidos" --> D
+    G -- aprobado --> H(["Fusión en main"]):::ok
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef mgr fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef fw fill:#dcfce7,stroke:#166534,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef pub fill:#fef3c7,stroke:#b45309,stroke-dasharray:4 3,color:#111827
+    classDef net fill:#fff7ed,stroke:#c2410c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    classDef drop fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef ok fill:#dcfce7,stroke:#166534,color:#111827
 ```
 
 1. **Consulta las Issues** abiertas y cerradas. Si ya existe una parecida, comenta en ella.

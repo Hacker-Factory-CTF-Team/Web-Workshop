@@ -29,6 +29,6 @@
 
 Opciones: `--phase FASE`, `--hypervisor virtualbox|kvm`, `--ip IP`, `--prefix N` y `--yes`.
 
-Sin `--phase`, ejecuta `detect` y después pregunta por cada fase en orden.
+Sin `--phase`, ejecuta `detect` y después pregunta por cada fase en orden. Cómo interactúa cada fase con libvirt, el gestor y el firewall: [diagrama de la instalación](../architecture/README.md#instalación-guiada-linux-con-kvm).
 
 Todo lo que crea queda anotado en `state/installer.json`, y `--phase uninstall` solo elimina lo anotado ahí. No borra datos de los laboratorios ni imágenes; para eso, ver la [guía de desinstalación](../management/desinstalacion.md#4-borrar-datos-imágenes-y-configuración).

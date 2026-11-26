@@ -14,31 +14,52 @@ El laboratorio despliega aplicaciones **vulnerables a propósito** en el equipo 
 
 ```mermaid
 flowchart LR
-    subgraph repo["Repositorio"]
-        LAUNCH["manager / manager.ps1<br/>(lanzadores)"]
-        PKG["src/pentestlab<br/>(gestor en Python)"]
-        CFG["config/defaults.json<br/>config/versions.json"]
-        LOCAL["config/local.json<br/>(generado)"]
-        LABS["labs/LAB/<br/>lab.json, compose.yaml,<br/>plantilla del proxy"]
-        ENV["state/LAB.env<br/>(generado)"]
-        INST["scripts/linux/install.sh<br/>scripts/windows/install.ps1"]
-        FWSRC["scripts/linux/pentestlab-fw.sh"]
+    subgraph REPO["Repositorio (versionado)"]
+        direction TB
+        INST["Instaladores<br/>scripts/linux/install.sh<br/>scripts/windows/install.ps1"]:::mgr
+        LAUNCH["Lanzadores<br/>manager · manager.ps1"]:::mgr
+        PKG["Gestor<br/>src/pentestlab"]:::mgr
+        CFG["config/defaults.json<br/>config/versions.json"]:::cfg
+        LABS["labs/LAB/<br/>lab.json · compose.yaml"]:::cfg
+        FWSRC["scripts/linux/<br/>pentestlab-fw.sh"]:::cfg
     end
-    DOCKER[("Docker Engine /<br/>Docker Desktop")]
-    FWBIN["/usr/local/sbin/pentestlab-fw<br/>(copia instalada, root)"]
-    HV["Red de laboratorio<br/>(libvirt o Host-only)"]
+    subgraph LOCALG["Generado localmente"]
+        direction TB
+        LOCAL["config/local.json"]:::gen
+        ENV["state/LAB.env"]:::gen
+    end
+    subgraph SYS["Sistema anfitrión"]
+        direction TB
+        HV["Red de laboratorio<br/>libvirt · Host-only"]:::host
+        FWBIN["/usr/local/sbin/<br/>pentestlab-fw"]:::fw
+        DOCKER[("Docker Engine<br/>Docker Desktop")]:::host
+    end
 
+    INST -- "config set-network<br/>install · diagnose" --> LAUNCH
     LAUNCH --> PKG
-    PKG -- lee --> CFG
-    PKG -- lee y escribe --> LOCAL
-    PKG -- lee --> LABS
+    CFG --> PKG
+    LABS --> PKG
+    PKG -- "lee y escribe" --> LOCAL
     PKG -- genera --> ENV
-    PKG -- "docker / docker compose (CLI)" --> DOCKER
-    PKG -- "sudo verify / apply" --> FWBIN
-    INST -- "config set-network, install, diagnose" --> LAUNCH
     INST -- crea --> HV
-    INST -- "copia (fase firewall)" --> FWBIN
-    FWSRC -. "SHA-256 comparado en cada start" .- FWBIN
+    INST -- "copia como root" --> FWBIN
+    FWSRC -. "SHA-256 en cada start" .-> FWBIN
+    PKG -- "sudo verify · apply" --> FWBIN
+    PKG -- "CLI docker compose<br/>--env-file state/LAB.env" --> DOCKER
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef mgr fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef cfg fill:#e0f2fe,stroke:#0369a1,color:#111827
+    classDef gen fill:#f8fafc,stroke:#64748b,stroke-dasharray:4 3,color:#111827
+    classDef fw fill:#dcfce7,stroke:#166534,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef net fill:#fff7ed,stroke:#c2410c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    style REPO fill:none,stroke:#1e40af
+    style LOCALG fill:none,stroke:#64748b,stroke-dasharray:6 4
+    style SYS fill:none,stroke:#166534
 ```
 
 | Componente | Ubicación | Responsabilidad |
@@ -71,34 +92,105 @@ flowchart LR
 | `updates.py` | `update --check`: consulta Docker Hub y GHCR sin aplicar nada |
 | `ui.py`, `errors.py` | Mensajes al usuario (en español, con "Cómo solucionarlo") y códigos de salida |
 
-## 3. Topología de red
+### Instalación guiada (Linux con KVM)
+
+El instalador solo hace lo que exige el sistema y delega el resto en el gestor ([ADR 0003](../adr/0003-gestor-python-biblioteca-estandar.md)). Con VirtualBox, la fase `network` usa `VBoxManage` en lugar de `virsh` y no registra red NAT.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant I as install.sh
+    participant V as libvirt (virsh)
+    participant M as ./manager
+    participant F as pentestlab-fw
+    participant D as Docker
+
+    U->>I: scripts/linux/install.sh --hypervisor kvm
+    Note over I: Fase detect: distribución, Docker, hipervisores, redes
+    Note over U,I: Antes de cada fase (deps, network, firewall,<br/>images, validate) pregunta si se ejecuta
+    rect rgba(59, 130, 246, 0.08)
+        Note over I,M: Fase network
+        I->>V: net-define pentestlab si no existe, y net-start (sudo)
+        I->>M: config set-network --platform linux-kvm --ip --interface virbr-plab
+        I->>V: red default (NAT): iniciar y autostart, si aceptas
+        I->>M: config set-network --nat-interface virbr0
+    end
+    rect rgba(34, 197, 94, 0.08)
+        Note over I,F: Fase firewall
+        I->>F: copia root:root 0755 en /usr/local/sbin
+        opt Si aceptas
+            I->>I: /etc/sudoers.d/pentestlab-fw (solo verify y apply)
+        end
+        opt Si la interfaz y Docker están disponibles
+            I->>F: apply + verify
+        end
+    end
+    rect rgba(245, 158, 11, 0.08)
+        Note over I,D: Fases images y validate
+        I->>M: install all
+        M->>D: docker pull de cada imagen por digest
+        M->>M: descarga y verifica recursos (SHA-256)
+        I->>M: diagnose
+    end
+    Note over I: Todo lo creado queda en state/installer.json<br/>para --phase uninstall
+```
+
+## 3. Topología de red y límites de confianza
+
+Tres zonas con distinto nivel de confianza: la VM de Kali (atacante), el anfitrión y cada laboratorio, que se trata como **comprometido**. En verde, las conexiones permitidas; en rojo punteado, las que bloquean las redes internas de Docker y el firewall del anfitrión.
 
 ```mermaid
 flowchart LR
-    NET(["LAN / Internet"])
-    subgraph VM["VM de Kali"]
-        ETH0["eth0<br/>red de laboratorio"]
-        ETH1["eth1<br/>NAT"]
+    NET(["LAN / Internet"]):::ext
+    subgraph KALI["VM de Kali · atacante"]
+        direction TB
+        K0["eth0<br/>red de laboratorio"]:::kali
+        K1["eth1<br/>NAT"]:::kali
     end
-    subgraph HOST["Anfitrión"]
-        LABIF["virbr-plab / vboxnetN<br/>IP de laboratorio"]
-        LO["127.0.0.1"]
-        subgraph PRJ["Proyecto Compose plab-LAB (uno por laboratorio)"]
-            EDGE["edge: nginx L4<br/>red edge, bridge plabe-*<br/>(no interna)"]
-            APP["aplicación<br/>red front, bridge plabi-*-f<br/>(interna)"]
-            AUX[("base de datos / LDAP<br/>redes data, ldap: plabi-*<br/>(internas)")]
+    subgraph HOST["Anfitrión · confiable"]
+        direction TB
+        LIP["virbr-plab / vboxnetN<br/>IP de laboratorio"]:::host
+        LO["127.0.0.1"]:::host
+        SVC["Servicios del anfitrión<br/>SSH, DNS, ..."]:::host
+        subgraph LAB["Laboratorio plab-LAB · se asume comprometido"]
+            direction LR
+            EDGE["edge<br/>nginx L4"]:::edge
+            APP["Aplicación"]:::vuln
+            AUX[("BD / LDAP")]:::vuln
         end
     end
 
-    ETH0 -- "solo los puertos de los laboratorios" --> LABIF
-    LABIF -- "DNAT de Docker" --> EDGE
-    LO -- "DNAT de Docker" --> EDGE
-    EDGE -- "front" --> APP
-    APP -- "data / ldap" --> AUX
-    ETH1 --> NET
-    NET -. "bloqueado por el firewall" .-> LABIF
-    EDGE -. "sin salida (Linux: pentestlab-fw)" .-> NET
+    K0 -- "TCP a los puertos de los labs<br/>DHCP · ping" --> LIP
+    LIP -- "DNAT de Docker" --> EDGE
+    LO -- "puerto publicado" --> EDGE
+    EDGE -- front --> APP
+    APP -- "data · ldap" --> AUX
+    K1 -- NAT --> NET
+
+    NET -. "LAN → IP de laboratorio" .-x LIP
+    K0 -. "otros servicios<br/>del anfitrión" .-x SVC
+    LAB -. "contenedores → anfitrión" .-x SVC
+    LAB -. "salida a LAN e Internet *" .-x NET
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef mgr fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef cfg fill:#e0f2fe,stroke:#0369a1,color:#111827
+    classDef gen fill:#f8fafc,stroke:#64748b,stroke-dasharray:4 3,color:#111827
+    classDef fw fill:#dcfce7,stroke:#166534,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef net fill:#fff7ed,stroke:#c2410c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    linkStyle 0,1,2,3,4,5 stroke:#15803d,stroke-width:2px
+    linkStyle 6,7,8,9 stroke:#b91c1c,stroke-width:1.5px
+    style KALI fill:none,stroke:#5b21b6
+    style HOST fill:none,stroke:#1e40af
+    style LAB fill:none,stroke:#b91c1c,stroke-dasharray:6 4
 ```
+
+\* En Windows, el proxy `edge` sí tiene salida: es un riesgo residual aceptado ([ADR 0002](../adr/0002-salida-del-proxy-firewall-y-dns.md)). Además, el anfitrión no enruta hacia la LAN ni hacia Internet nada de lo que Kali envía por `eth0`. La segmentación detallada de cada laboratorio está en [configuración de red](../networking/README.md#4-redes-docker-de-cada-laboratorio).
 
 Tres capas se complementan:
 
@@ -108,49 +200,132 @@ Tres capas se complementan:
 
 El detalle de subredes, bridges, puertos y DNS está en [configuración de red](../networking/README.md).
 
-## 4. Ciclo de vida de `start`
+## 4. Ciclo de vida de los laboratorios
+
+### Qué hace `start`
 
 ```mermaid
-flowchart TD
-    A["./manager start LAB..."] --> B{"Preflight:<br/>WSL, Docker ≥ 28, Compose ≥ 2.24,<br/>plataforma, interfaz de laboratorio,<br/>firewall verificado"}
-    B -- "fallo crítico" --> X1["SecurityBlock<br/>código 3"]
-    B -- ok --> C{"Imágenes por digest<br/>y recursos con SHA-256"}
-    C -- faltan --> X2["DependencyError<br/>código 4"]
-    C -- ok --> D["Conflictos de puertos<br/>(propone, nunca cambia en silencio)"]
-    D --> E["Validación de la configuración<br/>y avisos de recursos"]
-    E --> F{"Política estática sobre<br/>docker compose config"}
-    F -- incumple --> X1
-    F -- cumple --> G["Modo efímero: down --volumes<br/>(si el lab estaba parado)"]
-    G --> H["docker compose up --no-start"]
-    H --> I{"Sondas reales en cada red<br/>(antes de exponer nada)"}
-    I -- fallo --> R["docker compose down<br/>(conserva los volúmenes)"]
-    I -- ok --> J{"docker compose up --wait<br/>(healthchecks)"}
-    J -- "no llega a sano" --> R
-    J -- ok --> K{"Verificación posterior:<br/>puertos publicados, sockets,<br/>sondas otra vez"}
-    K -- fallo --> R
-    K -- ok --> L["HTTP en 127.0.0.1 e IP de laboratorio<br/>(informativo)"]
-    L --> M{"Ganchos post_start<br/>(BD de DVWA y Mutillidae, LDAP)"}
-    M -- fallo --> R
-    M -- ok --> N["URL de acceso"]
-    R --> X3["Se propaga el error:<br/>código 3 si falla una sonda o la verificación,<br/>1 en el resto de casos"]
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant M as ./manager
+    participant F as pentestlab-fw
+    participant D as Docker
+    participant P as Sonda busybox
+
+    U->>M: ./manager start LAB
+    rect rgba(34, 197, 94, 0.08)
+        Note over M,F: Preflight de la plataforma (fail-closed)
+        M->>M: WSL, Docker ≥ 28, Compose ≥ 2.24, plataforma, interfaz e IP
+        M->>F: sudo verify (antes compara el SHA-256 con el repositorio)
+        Note right of F: En Windows se comparan las reglas<br/>del grupo PentestLab
+        opt Reglas ausentes
+            M->>U: ¿Aplicarlas?
+            M->>F: sudo apply + verify
+        end
+    end
+    break Fallo crítico
+        M-->>U: SecurityBlock · código 3
+    end
+    M->>D: imágenes por digest y recursos con SHA-256
+    break Falta alguna
+        M-->>U: DependencyError · código 4
+    end
+    M->>M: conflictos de puertos, validación, avisos de recursos
+    M->>D: docker compose config --format json
+    M->>M: política estática
+    rect rgba(239, 68, 68, 0.07)
+        Note over M,P: Si algo falla desde aquí: docker compose down (conserva los volúmenes)
+        opt Modo efímero y laboratorio parado
+            M->>D: down --volumes
+        end
+        M->>D: up --no-start (crea redes y contenedores)
+        M->>P: docker run en cada red del laboratorio
+        P-->>M: salida, acceso al anfitrión, otros labs y segmentación: todo debe estar cerrado
+        M->>D: up --wait (healthchecks)
+        M->>D: puertos publicados (y sockets en escucha en el anfitrión)
+        M->>P: sondas otra vez
+        M->>M: HTTP en 127.0.0.1 y en la IP de laboratorio (informativo)
+        M->>D: ganchos post_start (exec o HTTP)
+    end
+    M-->>U: URL de acceso
 ```
 
-Cualquier excepción a partir de `up --no-start`, incluida la interrupción con Ctrl+C, ejecuta `docker compose down --remove-orphans` antes de propagarse (`lifecycle.py`, `_start_one`). Los volúmenes se conservan.
+Si falla una comprobación de seguridad (preflight, política, sondas o verificación posterior), el código de salida es 3; si el laboratorio no llega a estar sano o falla un gancho, es 1. Cualquier excepción a partir de `up --no-start`, incluida la interrupción con Ctrl+C, ejecuta `docker compose down --remove-orphans` antes de propagarse (`lifecycle.py`, `_start_one`). Los volúmenes se conservan.
 
 Las operaciones destructivas (`reset-data`, `reset`) piden escribir el identificador del laboratorio y después pasan por el mismo `start` completo. `restart` es `stop` + `start` conservando los datos. Detalle de cada comando: [uso del gestor](../management/gestor.md).
+
+### Estados de un laboratorio
+
+El estado no se guarda en ningún sitio: `./manager status` lo deduce de los contenedores del proyecto `plab-<lab>` (`Manager.state` en `lifecycle.py`), sin contar los de inicialización ni las sondas.
+
+```mermaid
+stateDiagram-v2
+    state "no desplegado" as ND
+    state "arrancando" as ARR
+    state "en ejecución" as RUN
+    state "unhealthy" as UNH
+    state "parcial" as PAR
+    state "detenido" as STOP
+
+    [*] --> ND
+    ND --> ARR: start
+    ARR --> RUN: healthchecks correctos
+    ARR --> ND: fallo (compose down)
+    RUN --> UNH: falla un healthcheck
+    UNH --> RUN: se recupera
+    RUN --> STOP: stop
+    UNH --> STOP: stop
+    PAR --> STOP: stop
+    STOP --> ARR: start, restart
+    STOP --> ND: reset-data, reset
+
+    note right of PAR
+        Estado derivado: unos contenedores
+        en marcha y otros no
+    end note
+    note right of STOP
+        reset-data y reset también actúan sobre
+        un laboratorio en marcha: borran contenedores
+        y volúmenes y vuelven a arrancar
+    end note
+```
 
 ## 5. Flujo de configuración
 
 ```mermaid
 flowchart LR
-    DEF["config/defaults.json"] --> MERGE["Config()<br/>(fusión)"]
-    LOC["config/local.json"] --> MERGE
-    LJ["labs/*/lab.json"] --> MERGE
-    VER["config/versions.json"] --> MERGE
-    MERGE --> RENDER["render_env()"]
-    RENDER --> ENVF["state/LAB.env"]
-    ENVF --> COMPOSE["docker compose<br/>--env-file state/LAB.env"]
-    CLI["./manager config set-*<br/>instaladores"] -- "valida y guarda" --> LOC
+    subgraph IN["Entradas"]
+        direction TB
+        DEF["config/defaults.json"]:::cfg
+        LOC["config/local.json"]:::gen
+        VER["config/versions.json"]:::cfg
+        LJ["labs/*/lab.json"]:::cfg
+    end
+    CLI["config set-*<br/>instaladores"]:::mgr
+    MERGE["Config()<br/>fusión y validación"]:::mgr
+    ENVF["state/LAB.env"]:::gen
+    COMPOSE["docker compose<br/>-f labs/LAB/compose.yaml"]:::host
+
+    CLI -- "valida y guarda" --> LOC
+    DEF --> MERGE
+    LOC --> MERGE
+    VER --> MERGE
+    LJ --> MERGE
+    MERGE -- "render_env()" --> ENVF
+    ENVF -- "--env-file" --> COMPOSE
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef mgr fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef cfg fill:#e0f2fe,stroke:#0369a1,color:#111827
+    classDef gen fill:#f8fafc,stroke:#64748b,stroke-dasharray:4 3,color:#111827
+    classDef fw fill:#dcfce7,stroke:#166534,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef net fill:#fff7ed,stroke:#c2410c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    style IN fill:none,stroke:#64748b
 ```
 
 - Los laboratorios se **descubren** recorriendo `labs/*/lab.json`. No hay un registro central.

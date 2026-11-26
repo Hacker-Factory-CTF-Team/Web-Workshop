@@ -28,15 +28,46 @@ La documentación es solo técnica: no incluye soluciones ni pistas. La idea es 
 
 ## Cómo funciona
 
-```text
-  Kali (VM) ── adaptador 1: red de laboratorio ──► IP de laboratorio del anfitrión (192.168.157.1 / 192.168.57.1)
-      │                                                   │  solo los puertos de los laboratorios
-      └── adaptador 2: NAT (Internet para Kali)           ▼
-                                               proxy nginx L4 (uno por laboratorio)
-                                                          │  redes Docker internas, sin salida
-                                                          ▼
-                                             aplicación + base de datos / LDAP
+```mermaid
+flowchart LR
+    subgraph KALI["VM de Kali"]
+        direction TB
+        K0["eth0<br/>red de laboratorio"]:::kali
+        K1["eth1<br/>NAT"]:::kali
+    end
+    subgraph HOST["Anfitrión"]
+        direction LR
+        LIP["IP de laboratorio<br/>192.168.157.1 · 192.168.57.1"]:::host
+        subgraph LAB["Laboratorio (uno por aplicación)"]
+            direction LR
+            EDGE["Proxy edge<br/>nginx L4"]:::edge
+            APP["Aplicación<br/>vulnerable"]:::vuln
+            AUX[("BD / LDAP")]:::vuln
+        end
+    end
+    NET(["LAN / Internet"]):::ext
+
+    K0 -- "puertos de los labs" --> LIP
+    LIP --> EDGE
+    EDGE -- "red interna" --> APP
+    APP -- "red interna" --> AUX
+    K1 --> NET
+    NET -. "desde la LAN: bloqueado" .-x LIP
+    APP -. "sin salida" .-x NET
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    linkStyle 0,1,2,3,4 stroke:#15803d,stroke-width:2px
+    linkStyle 5,6 stroke:#b91c1c,stroke-width:2px
+    style LAB fill:none,stroke:#b91c1c,stroke-dasharray:6 4
+    style KALI fill:none,stroke:#5b21b6
+    style HOST fill:none,stroke:#1e40af
 ```
+
+En verde, las conexiones permitidas; en rojo, las bloqueadas. La IP de laboratorio es `192.168.157.1` con KVM y `192.168.57.1` con VirtualBox o Windows.
 
 - **Aplicaciones aisladas.** Viven en redes Docker internas: sin Internet, sin acceso a otros laboratorios y sin puertos publicados.
 - **Un único punto de entrada.** Un proxy nginx L4 por laboratorio publica los puertos, solo en `127.0.0.1` y en la IP de laboratorio, nunca en `0.0.0.0`.

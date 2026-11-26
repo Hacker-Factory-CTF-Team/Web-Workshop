@@ -43,21 +43,34 @@ Regla práctica:
 ## 4. Cómo se evalúan las propuestas
 
 ```mermaid
-flowchart TD
-    A["¿Existe ya una Issue o Discussion parecida?"] -- sí --> A2["Comenta en la existente"]
-    A -- no --> B["Abre una Issue con la plantilla adecuada"]
-    B --> C["Los responsables la revisan"]
-    C --> D{"¿Falta información?"}
-    D -- sí --> E["Se pide en la Issue<br/>(estado: necesita información)"]
-    E --> C
-    D -- no --> F["Evaluación técnica, educativa y de seguridad"]
-    F --> G{"Decisión"}
-    G --> H["Aceptada"]
-    G --> I["Pospuesta"]
-    G --> J["Rechazada<br/>(con el motivo)"]
-    G --> K["Duplicada"]
-    H --> L["Se asigna a quien la implemente<br/>(quien la propuso u otra persona)"]
-    L --> M["Pull Request y revisión"]
+stateDiagram-v2
+    state "pendiente de revisión" as PEND
+    state "necesita información" as INFO
+    state "aceptada" as ACC
+    state "pospuesta" as POS
+    state "rechazada (wontfix)" as REJ
+    state "duplicada" as DUP
+    state "en implementación" as IMPL
+    state "cerrada" as DONE
+
+    [*] --> PEND: Issue con plantilla
+    PEND --> INFO: falta información
+    INFO --> PEND: quien la propuso responde
+    PEND --> ACC
+    PEND --> POS
+    PEND --> REJ: con el motivo
+    PEND --> DUP
+    POS --> PEND: se retoma
+    ACC --> IMPL: se asigna
+    IMPL --> DONE: Pull Request fusionado
+    REJ --> [*]
+    DUP --> [*]
+    DONE --> [*]
+
+    note right of PEND
+        Evaluación técnica, educativa,
+        de seguridad y de recursos
+    end note
 ```
 
 1. **Busca antes** entre las Issues abiertas y cerradas.

@@ -39,6 +39,37 @@ sudo pentestlab-fw remove                          # quitar las reglas (start la
 
 ## 3. Reglas
 
+Dónde se engancha cada cadena en el recorrido de un paquete IPv4. `PLAB-IN6` se engancha igual en la cadena `INPUT` de `ip6tables`.
+
+```mermaid
+flowchart LR
+    PKT["Paquete IPv4"]:::ext --> PRE["nat PREROUTING<br/>DNAT de Docker"]:::host
+    PRE -- "destino: el anfitrión" --> IN["filter INPUT"]:::host
+    PRE -- "se reenvía" --> FWD["filter FORWARD"]:::host
+    IN --> PIN["PLAB-IN<br/>1.ª regla"]:::fw
+    FWD --> DU["DOCKER-USER"]:::host --> PFWD["PLAB-FWD<br/>1.ª regla"]:::fw
+    PIN -- RETURN --> RIN["resto de INPUT<br/>ufw, Tailscale..."]:::ext
+    PFWD -- RETURN --> RD["reglas de Docker"]:::ext
+    PIN -- "ACCEPT: DHCP, DNS, ping" --> OK1(["aceptado"]):::ok
+    PFWD -- "ACCEPT: solo NAT de Kali" --> OK2(["reenviado"]):::ok
+    PIN -- DROP --> X(["descartado"]):::drop
+    PFWD -- DROP --> X
+
+    classDef kali fill:#ede9fe,stroke:#5b21b6,color:#111827
+    classDef mgr fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef host fill:#dbeafe,stroke:#1e40af,color:#111827
+    classDef fw fill:#dcfce7,stroke:#166534,color:#111827
+    classDef edge fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef vuln fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef pub fill:#fef3c7,stroke:#b45309,stroke-dasharray:4 3,color:#111827
+    classDef net fill:#fff7ed,stroke:#c2410c,color:#111827
+    classDef ext fill:#f3f4f6,stroke:#4b5563,color:#111827
+    classDef drop fill:#fee2e2,stroke:#b91c1c,color:#111827
+    classDef ok fill:#dcfce7,stroke:#166534,color:#111827
+```
+
+El resultado depende de la primera regla que coincide; las tablas siguientes las detallan en orden.
+
 Las variables son:
 - `IP`: la IP de laboratorio;
 - `IFACE`: la interfaz de laboratorio (`virbr-plab` o `vboxnetN`);
