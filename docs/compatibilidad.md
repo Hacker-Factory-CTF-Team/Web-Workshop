@@ -67,3 +67,5 @@ Ejecuta los niveles 2 a 4 de las [pruebas](testing/pruebas.md) en tu plataforma 
 - las versiones de Docker y Compose;
 - la fecha;
 - el resultado de cada prueba.
+
+Puedes hacerlo con un Pull Request que modifique este documento o, si no quieres editarlo, con una Issue que incluya esos datos y la salida de las pruebas ([CONTRIBUTING](../CONTRIBUTING.md#1-tipos-de-contribución)). Si alguna prueba falla, abre además un *Informe de error*; si el fallo rompe el aislamiento, sigue la [política de seguridad](../SECURITY.md).

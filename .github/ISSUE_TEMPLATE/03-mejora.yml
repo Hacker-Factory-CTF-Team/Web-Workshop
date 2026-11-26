@@ -1,0 +1,49 @@
+name: Mejora
+description: Propón un cambio en algo que ya existe (un comando, un laboratorio, el instalador, el kit de Kali...).
+title: "[Mejora] "
+labels: ["enhancement", "estado: pendiente de revisión"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Si algo **no funciona**, usa la plantilla *Informe de error*. Si la mejora es de la documentación, *Documentación*.
+
+        Proponer una mejora no garantiza que se implemente: los responsables la evaluarán ([proceso](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/docs/project/README.md#4-cómo-se-evalúan-las-propuestas)).
+  - type: input
+    id: que
+    attributes:
+      label: Qué quieres mejorar
+      placeholder: "Por ejemplo: la salida de ./manager status"
+    validations:
+      required: true
+  - type: textarea
+    id: limitacion
+    attributes:
+      label: Qué limitación tiene ahora
+    validations:
+      required: false
+  - type: textarea
+    id: cambio
+    attributes:
+      label: Qué cambio propones
+    validations:
+      required: false
+  - type: textarea
+    id: beneficio
+    attributes:
+      label: Qué beneficio aportaría
+    validations:
+      required: false
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Ejemplos o referencias
+    validations:
+      required: false
+  - type: checkboxes
+    id: implementar
+    attributes:
+      label: Colaboración
+      options:
+        - label: Me gustaría implementarla yo (con ayuda si hace falta).
+          required: false

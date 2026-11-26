@@ -108,7 +108,8 @@ Después: `.\manager.ps1 network-check`.
 
 **VM de Kali** en VirtualBox ([detalle](virtualbox.md#3-vm-de-kali)):
 - **adaptador 1**: *Adaptador solo-anfitrión*, el `VirtualBox Host-Only Ethernet Adapter #N` que indicó el instalador;
-- **adaptador 2**: *NAT*.
+- **adaptador 2**: *NAT*;
+- **recomendado**: con la VM apagada, `VBoxManage.exe modifyvm "<nombre de la VM>" --nat-localhostreachable2 off`, para que el NAT no dé acceso al loopback del anfitrión ([por qué](virtualbox.md#nat-de-kali-y-servicios-locales-del-anfitrión)).
 
 Dentro de Kali, la IP del anfitrión es `192.168.57.1`:
 
@@ -151,7 +152,7 @@ Detiene los laboratorios y quita las reglas del firewall, el DHCP y la interfaz 
 |---|---|---|
 | Salida del proxy `edge` | Bloqueada por `pentestlab-fw` | **Abierta.** Docker Desktop no permite filtrarla desde el anfitrión. El proxy es nginx L4 endurecido (sin root, solo lectura, sin capacidades) y sin DNS externo. El gestor lo muestra como aviso ([ADR 0002](../adr/0002-salida-del-proxy-firewall-y-dns.md)) |
 | Contenedores → servicios del anfitrión | Bloqueado | Depende de Docker Desktop (`host.docker.internal`). El gestor lo comprueba y, en Windows, avisa en vez de bloquear. La PoC lo mide |
-| NAT de Kali → anfitrión | KVM: bloqueado por `pentestlab-fw` | El NAT de VirtualBox (`10.0.2.2`) puede dar acceso a servicios del anfitrión en `127.0.0.1`. `kali-probe.sh` lo comprueba |
+| NAT de Kali → anfitrión | KVM: bloqueado por `pentestlab-fw` | El NAT de VirtualBox puede dar acceso a los servicios del anfitrión en `127.0.0.1` y el firewall no lo ve. Se corrige en la VM (`--nat-localhostreachable2 off`) y `kali-probe.sh` lo marca como fallo ([detalle](virtualbox.md#nat-de-kali-y-servicios-locales-del-anfitrión)) |
 | Persistencia del firewall | Reglas en memoria, reaplicadas en cada `start` | Reglas persistentes, verificadas en cada `start` |
 | Zona horaria de WebGoat | La del anfitrión | UTC, salvo `.\manager.ps1 config set-timezone Europe/Madrid` |
 

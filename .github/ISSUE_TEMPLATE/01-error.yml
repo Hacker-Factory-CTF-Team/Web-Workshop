@@ -1,0 +1,64 @@
+name: Informe de error
+description: Algo no funciona como debería (instalación, gestor, un laboratorio, Kali...).
+title: "[Error] "
+labels: ["bug", "estado: pendiente de revisión"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por avisar. Antes de enviarlo:
+        - busca si ya existe una Issue parecida y revisa la [resolución de problemas](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/docs/troubleshooting/README.md);
+        - si el problema **rompe el aislamiento** (un laboratorio llega a Internet, a la LAN o al anfitrión, o un puerto es accesible desde fuera), **no lo publiques aquí**: sigue la [política de seguridad](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/SECURITY.md).
+
+        Solo es obligatorio el primer campo. Si no sabes rellenar el resto, déjalo en blanco.
+  - type: textarea
+    id: que-ocurre
+    attributes:
+      label: Qué ha ocurrido
+      description: Describe el problema. Si hay un mensaje de error, cópialo tal cual.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Qué esperabas que ocurriera
+    validations:
+      required: false
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. ./manager start dvwa
+        2. ...
+    validations:
+      required: false
+  - type: dropdown
+    id: plataforma
+    attributes:
+      label: Plataforma
+      options:
+        - Linux + KVM/libvirt
+        - Linux + VirtualBox
+        - Windows 11 + Docker Desktop + VirtualBox
+        - Otra / no lo sé
+    validations:
+      required: false
+  - type: input
+    id: entorno
+    attributes:
+      label: Distribución y versiones
+      description: Distribución del anfitrión, versión de Docker Engine y de Compose (`docker version`, `docker compose version`).
+      placeholder: "Ubuntu 24.04, Docker 29.1, Compose 2.40"
+    validations:
+      required: false
+  - type: textarea
+    id: registros
+    attributes:
+      label: Diagnóstico y registros
+      description: |
+        Salida de `./manager diagnose` y, si el problema es de un laboratorio, de `./manager logs LAB`.
+        **Revísala antes de pegarla:** incluye las IP de tus interfaces de red.
+      render: text
+    validations:
+      required: false

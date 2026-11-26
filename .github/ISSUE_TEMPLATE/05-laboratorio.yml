@@ -1,0 +1,64 @@
+name: Propuesta de laboratorio
+description: Propón una aplicación vulnerable, un escenario o un ejercicio nuevo para el taller.
+title: "[Laboratorio] "
+labels: ["enhancement", "laboratorio", "estado: pendiente de revisión"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No necesitas saber cómo se integraría en el repositorio: basta con la idea y su objetivo educativo. Los responsables te ayudarán a concretarla.
+
+        Para que un laboratorio encaje en el taller, en general debe poder funcionar **sin Internet**, ejecutarse desde una **imagen oficial** de su proyecto y caber en el equipo de un participante. Si no lo sabes, no pasa nada: se comprobará durante la evaluación ([criterios](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/docs/development/nuevo-laboratorio.md#1-criterios-previos)).
+  - type: input
+    id: nombre
+    attributes:
+      label: Nombre o temática
+      placeholder: "Por ejemplo: una API REST vulnerable, OWASP crAPI, ataques a JWT..."
+    validations:
+      required: true
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Objetivo educativo
+      description: Qué aprendería quien lo use y qué aporta frente a los laboratorios actuales (DVWA, Juice Shop, WebGoat, Mutillidae).
+    validations:
+      required: true
+  - type: textarea
+    id: tecnologia
+    attributes:
+      label: Vulnerabilidades o tecnologías implicadas
+    validations:
+      required: false
+  - type: textarea
+    id: experiencia
+    attributes:
+      label: Experiencia que se quiere ofrecer
+      description: Retos guiados, escenario libre, ejercicio para una sesión concreta del taller...
+    validations:
+      required: false
+  - type: dropdown
+    id: dificultad
+    attributes:
+      label: Dificultad aproximada
+      options:
+        - Iniciación
+        - Intermedia
+        - Avanzada
+        - Varios niveles
+        - No lo sé
+    validations:
+      required: false
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Aplicación existente, referencias o materiales
+      description: Enlace al proyecto o a su imagen de Docker, si existe, y cualquier material de apoyo.
+    validations:
+      required: false
+  - type: checkboxes
+    id: implementar
+    attributes:
+      label: Colaboración
+      options:
+        - label: Me gustaría ayudar a integrarlo o a preparar su material.
+          required: false

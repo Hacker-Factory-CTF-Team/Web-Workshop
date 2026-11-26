@@ -14,7 +14,7 @@ No uses `docker compose up` directamente en `labs/<lab>/`. Te saltarías las com
 ./manager [--yes] COMANDO [opciones]
 ```
 
-`LAB` es `dvwa`, `juice-shop`, `webgoat`, `mutillidae` o `all`. Si no indicas ninguno, se aplica a todos.
+`LAB` es `dvwa`, `juice-shop`, `webgoat`, `mutillidae` o `all`. Si no indicas ninguno, se aplica a todos. También se aceptan los alias `juice` y `juiceshop` (Juice Shop), `webwolf` (WebGoat) y `mutillidae2`.
 
 ### Información
 
@@ -91,6 +91,8 @@ La zona horaria solo afecta a WebGoat. Con `auto` se toma de `/etc/localtime`.
 Si un cambio de puerto no es válido, el menú lo revierte y no deja nada a medias.
 
 ## 3. Qué hace `start`
+
+La misma secuencia, en diagrama: [arquitectura](../architecture/README.md#qué-hace-start). Los estados que muestra `status` y cómo se pasa de uno a otro: [estados de un laboratorio](../architecture/README.md#estados-de-un-laboratorio).
 
 1. **Preflight (fail-closed):**
    - no estar en WSL;

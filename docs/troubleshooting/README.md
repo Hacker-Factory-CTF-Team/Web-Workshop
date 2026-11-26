@@ -11,7 +11,7 @@
 
 Todos los errores del gestor terminan con una línea **"Cómo solucionarlo"**. El código de salida indica el tipo de problema ([códigos](../management/gestor.md#5-códigos-de-salida)).
 
-Si pides ayuda, adjunta la salida de `./manager diagnose`.
+Si no encuentras la solución aquí, abre una Issue con la plantilla [*Informe de error*](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/issues/new/choose) y adjunta la salida de `./manager diagnose`. No contiene secretos, pero sí las IP de tus interfaces de red: revísala antes de publicarla. Si el problema rompe el aislamiento, no lo publiques: sigue la [política de seguridad](../../SECURITY.md).
 
 ## Instalación
 
@@ -63,6 +63,7 @@ Es el comportamiento *fail-closed*: algo no garantiza el aislamiento. Lee las l�
 | WebGoat no enlaza bien con WebWolf | Entra por la IP de laboratorio, no por `127.0.0.1` ([ficha](../labs/webgoat.md#acceso)) |
 | Kali no tiene Internet (KVM) | `eth1` sin IP o sin ruta: el NAT depende de las reglas de `pentestlab-fw`, que se aplican en `./manager start` ([kvm.md](../installation/kvm.md#5-problemas-frecuentes)) |
 | Kali tiene la ruta por defecto por la red de laboratorio | La red anuncia pasarela (versión antigua del instalador): repite la fase `network` con Kali apagada. En VirtualBox: `nmcli ... ipv4.never-default yes` ([virtualbox.md](../installation/virtualbox.md#3-vm-de-kali)) |
+| `kali-probe.sh` (VirtualBox): `FALLO anfitrión vía NAT (10.0.3.2:N) ACCESIBLE` | El NAT de VirtualBox da a Kali acceso al `127.0.0.1` del anfitrión. No rompe el aislamiento respecto a la LAN ni bloquea el laboratorio, pero expone los servicios locales del anfitrión a Kali. Con la VM apagada: `VBoxManage modifyvm "<VM>" --nat-localhostreachable2 off` ([detalle](../installation/virtualbox.md#nat-de-kali-y-servicios-locales-del-anfitrión)) |
 | Aviso de certificado en Mutillidae HTTPS | Es normal: el certificado es autofirmado |
 
 ## Pruebas de red

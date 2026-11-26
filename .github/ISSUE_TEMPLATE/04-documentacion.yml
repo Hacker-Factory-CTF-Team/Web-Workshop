@@ -1,0 +1,30 @@
+name: Documentación
+description: Falta información, algo es confuso o no coincide con lo que hace el laboratorio.
+title: "[Docs] "
+labels: ["documentation", "estado: pendiente de revisión"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        La documentación es solo técnica: no incluye soluciones ni pistas sobre las vulnerabilidades de las aplicaciones, y no se añadirán.
+  - type: input
+    id: documento
+    attributes:
+      label: Qué documento
+      description: Ruta o enlace. Si no sabes cuál es, describe qué buscabas.
+      placeholder: "docs/installation/kvm.md, sección 3.2"
+    validations:
+      required: true
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué falta, qué es confuso o qué está mal
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Qué cambio propones
+      description: Opcional. Si lo sabes, el texto que añadirías o corregirías.
+    validations:
+      required: false

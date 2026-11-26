@@ -1,0 +1,52 @@
+name: Nueva funcionalidad
+description: Propón algo que el laboratorio no hace todavía.
+title: "[Funcionalidad] "
+labels: ["enhancement", "estado: pendiente de revisión"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        No hace falta conocer el código ni tener la idea completa: se puede desarrollar en la conversación.
+        Si quieres mejorar algo que **ya existe**, usa la plantilla *Mejora*. Si es un laboratorio nuevo, *Propuesta de laboratorio*.
+
+        Proponer una funcionalidad no garantiza que se implemente: los responsables la evaluarán ([proceso](https://github.com/Hacker-Factory-CTF-Team/Web-Workshop/blob/main/docs/project/README.md#4-cómo-se-evalúan-las-propuestas)).
+  - type: textarea
+    id: necesidad
+    attributes:
+      label: Qué necesidad has detectado
+      description: Qué echas en falta o qué problema tienes ahora.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Qué funcionalidad propones
+      description: Cómo te imaginas que funcionaría. Puede ser una idea aproximada.
+    validations:
+      required: false
+  - type: dropdown
+    id: beneficiarios
+    attributes:
+      label: A quién beneficiaría
+      multiple: true
+      options:
+        - Participantes del taller
+        - Personas que preparan o imparten el taller
+        - Colaboradores y desarrolladores del repositorio
+        - No lo sé
+    validations:
+      required: false
+  - type: textarea
+    id: ejemplos
+    attributes:
+      label: Ejemplos de uso o referencias
+      description: Un comando imaginario, una captura, otro proyecto que lo haga...
+    validations:
+      required: false
+  - type: checkboxes
+    id: implementar
+    attributes:
+      label: Colaboración
+      options:
+        - label: Me gustaría implementarla yo (con ayuda si hace falta).
+          required: false
