@@ -138,7 +138,7 @@ Con 8–14 GiB de RAM, arranca solo los laboratorios que vayas a usar: `./manage
 
 Paso a paso: [Linux por distribución](docs/installation/linux.md) → [KVM y VM de Kali](docs/installation/kvm.md) → [Preparación de Kali](docs/kali/preparacion.md).
 
-Con **VirtualBox** en Linux es igual, con `--hypervisor virtualbox` ([guía](docs/installation/virtualbox.md), *no probado*).
+Con **VirtualBox** en Linux es igual, con `--hypervisor virtualbox` ([guía](docs/installation/virtualbox.md)).
 
 ### Windows 11 (no probado)
 
