@@ -2,7 +2,13 @@
 
 Cada contenedor tiene un límite de CPU (`cpus`) y de memoria (`mem_limit`), y un límite de procesos (`pids_limit`). Los límites de CPU y memoria se configuran por servicio; el de procesos es fijo en `compose.yaml`.
 
+La máquina virtual atacante (Kali Linux) se dimensiona y aísla de forma independiente a través del hipervisor (VirtualBox o KVM).
+
+---
+
 ## 1. Límites por defecto
+
+### Contenedores de los laboratorios
 
 | Laboratorio | Servicio | CPU | Memoria | PIDs |
 |---|---|---:|---:|---:|
@@ -19,7 +25,7 @@ Cada contenedor tiene un límite de CPU (`cpus`) y de memoria (`mem_limit`), y u
 | | `directory` | 0,25 | 256m | 256 |
 | **Total** | | **7,25** | **~4,8 GiB** | |
 
-Los límites son **máximos**, no reservas.
+Los límites de los contenedores son **máximos asignables**, no reservas inmediatas de memoria.
 
 Consumo medido en reposo con los 4 laboratorios arrancados (2026-11-22):
 
@@ -32,48 +38,101 @@ Consumo medido en reposo con los 4 laboratorios arrancados (2026-11-22):
 | Cada proxy `edge` | ~2 MiB |
 | **Total** | **~940 MiB** |
 
-Suma también la VM de Kali (4 GiB y 2 vCPU recomendados).
+### VM de Kali Linux (VirtualBox)
 
-| Equipo anfitrión | Recomendación |
+Los scripts del instalador (`scripts/linux/install.sh --phase kali-vm`) asignan por defecto los siguientes recursos a la máquina virtual:
+
+| Recurso | Valor por defecto | Parámetro de ajuste en `install.sh` | Límites permitidos |
+|---|---|---|---|
+| Memoria RAM | **4096 MiB** (4 GiB) | `--memory MB` | Mínimo `1024` MiB; no puede superar la RAM del anfitrión |
+| vCPUs | **4** | `--cpus N` | Mínimo `1`; enteros positivos |
+| Memoria de vídeo (VRAM) | **128 MiB** (VMSVGA) | `--vram MB` | Entre `1` y `128` MiB |
+| Disco virtual (.vdi) | Dinámico (hasta ~80 GB) | Automático | Requiere al menos 2 GiB libres para registrarse |
+
+### Dimensionamiento recomendado del equipo anfitrión
+
+| Equipo anfitrión | Recomendación de uso |
 |---|---|
-| 8 GiB de RAM, 4 núcleos | Kali + 1 o 2 laboratorios a la vez |
-| 16 GiB de RAM, 4+ núcleos | Kali + los 4 laboratorios |
+| **8 GiB de RAM, 4 núcleos** | Ajustar Kali a 2 vCPU y 2048–3072 MiB de RAM (`--cpus 2 --memory 3072`). Ejecutar Kali junto a 1 o 2 laboratorios simultáneos. |
+| **16 GiB de RAM, 6+ núcleos** | Valores por defecto (Kali con 4 vCPUs y 4 GiB de RAM) + los 4 laboratorios arrancados simultáneamente. |
+| **32+ GiB de RAM, 8+ núcleos** | Entorno holgado para ejecutar los 4 laboratorios, Kali al máximo y herramientas pesadas de análisis/fuzzing. |
 
-## 2. Consultar
+---
+
+## 2. Consultar recursos
 
 ```bash
-./manager list          # CPU y RAM máximas por laboratorio
+./manager list          # CPU y RAM máximas configuradas por laboratorio
 ./manager status        # consumo actual por contenedor (CPU, memoria uso/límite, PIDs)
-./manager config show   # límites efectivos por servicio
+./manager config show   # límites efectivos por servicio en config/local.json
 ```
 
-## 3. Cambiar
+Para comprobar los recursos asignados a la VM de Kali en VirtualBox:
+
+```bash
+VBoxManage showvminfo kali-plab | grep -E "Memory size|Number of CPUs|VRAM size"
+```
+
+---
+
+## 3. Cambiar recursos
+
+### En los contenedores (`./manager config`)
 
 ```bash
 ./manager config set-resources webgoat webgoat --memory 2g
 ./manager config set-resources dvwa db --cpus 0.25 --memory 256m
-./manager restart webgoat        # si estaba en marcha
+./manager restart webgoat        # aplica el cambio si el laboratorio estaba en marcha
 ```
 
 - `--cpus`: número mayor que 0 y como máximo 64 (admite decimales).
-- `--memory`: número seguido de `m` o `g`.
+- `--memory`: número seguido de `m` (megabytes) o `g` (gigabytes).
 - Los valores se guardan en `config/local.json` y se aplican en el siguiente `start` o `restart`.
 
-Con límites demasiado bajos, el laboratorio puede no llegar a estar sano (*healthy*) dentro del tiempo de arranque, sobre todo WebGoat (Java) y las bases de datos.
+> [!WARNING]
+> Con límites excesivamente bajos, los servicios pueden no alcanzar el estado saludable (*healthy*) antes del tiempo límite de arranque (`start_timeout_seconds`), especialmente WebGoat (Java/JVM) y las bases de datos SQL.
 
-## 4. Avisos antes de arrancar
+### En la VM de Kali Linux
 
-`start` calcula los recursos y **avisa sin bloquear**. En un terminal pregunta si quieres continuar. Avisa en tres casos:
+**Durante el aprovisionamiento automatizado:**
+Pasa los argumentos deseados a la fase `kali-vm` del instalador:
 
-- la memoria máxima de los laboratorios que vas a arrancar supera el 90 % de la memoria disponible del anfitrión;
-- la suma de los límites de memoria (los que arrancas más los que ya están en marcha) supera la memoria que ve Docker;
-- la suma de los límites de CPU supera las CPU disponibles. Se repartirán, pero puede ir lento. Recuerda reservar CPU para Kali.
+```bash
+scripts/linux/install.sh --phase kali-vm --memory 2048 --cpus 2 --vram 64
+```
 
-## 5. Disco
+**Con la VM ya creada (en caliente / con máquina apagada):**
+Apaga la máquina virtual y modifícala directamente con `VBoxManage`:
 
-- Imágenes: unos 5 GB en total.
-- Volúmenes de datos: unos pocos cientos de MB, que crecen con el uso.
-- VM de Kali: entre 15 y 80 GB según la imagen y el uso (el qcow2 crece según se escribe).
+```bash
+VBoxManage modifyvm "kali-plab" --memory 2048 --cpus 2 --vram 128
+```
+
+---
+
+## 4. Avisos preventivos del gestor
+
+Antes de iniciar cualquier contenedor, `./manager start` evalúa los recursos del sistema anfitrión y emite advertencias preventivas (sin bloquear el despliegue):
+
+- La memoria máxima requerida por los laboratorios a arrancar supera el **90 % de la memoria libre** disponible en el anfitrión.
+- La suma agregada de límites de memoria (los que arrancas más los que ya están en ejecución) supera la memoria total que visualiza el demonio de Docker.
+- La suma agregada de límites de CPU supera los núcleos físicos/lógicos disponibles en el anfitrión (el kernel repartirá el tiempo de CPU, pero el rendimiento puede verse degradado). Recuerda siempre reservar CPU suficiente para la máquina virtual de Kali.
+
+---
+
+## 5. Espacio en disco
+
+El almacenamiento requerido se reparte entre contenedores, recursos estáticos y la máquina virtual:
+
+- **Imágenes Docker:** unos 5 GB en total fijadas por digest (DVWA, Juice Shop, WebGoat, Mutillidae y proxys `edge`).
+- **Volúmenes de datos:** unos pocos cientos de megabytes que aumentan gradualmente con el almacenamiento persistente de ejercicios.
+- **VM de Kali Linux:**
+  - Archivo comprimido `.7z` descargado: ~3–4 GB.
+  - Disco base `.vdi` (o `.qcow2` en KVM) descomprimido: ~12–15 GB iniciales.
+  - El formato de disco es dinámico y se expande a medida que se escriben datos (instalación de paquetes con `kali/install.sh`, diccionarios, capturas, etc.) hasta un tamaño virtual de ~80 GB.
+  - El instalador verifica que existan al menos 2 GiB libres adicionales antes de proceder con el registro.
+
+Comprobación de espacio ocupado por Docker:
 
 ```bash
 docker system df
