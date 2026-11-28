@@ -8,7 +8,7 @@ Solo se marca como **probado** lo que se ha ejecutado de verdad, y se indica có
 |---|---|---|---|---|
 | CachyOS (Arch), kernel 7.3 | KVM/QEMU (libvirt 12.9, `qemu-desktop`) | **Probado** | 2026-11-23 | VM de Kali real con dos NIC (laboratorio + NAT `default`), `kali-probe.sh --full-scan` con rutas temporales y LAN emulada con `linux-netns.sh test` |
 | CachyOS (Arch), kernel 7.3 | Host-only emulada (veth + netns) | **Probado** | 2026-11-22 | `linux-validation-session.sh`: 211/211 |
-| Linux | VirtualBox | No probado | | El instalador lo implementa ([virtualbox.md](installation/virtualbox.md)) |
+| Arch Linux, Kernel 7.3 | VirtualBox | **Probado** | 2026-11-28 | En 2 sistemas Arch Linux distintos. Mediante configuración automática del instalador. Tan solo es necesario descarga y descompresión manuales de archivo 7z para la Kali, el resto es automático. Se generan 2 interfaces de red dentro de Kali (Host-Only y NAT) con aislamiento que consigue superar todas las pruebas (nivel 1-5). |
 | Debian / Ubuntu | KVM o VirtualBox | No probado | | El instalador reconoce la familia de distribución |
 | Fedora | KVM o VirtualBox | No probado | | Ídem |
 | openSUSE | KVM o VirtualBox | No probado | | Ídem |

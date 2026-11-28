@@ -1,42 +1,56 @@
 # Instalación en Linux
 
-| Distribución | Estado |
-|---|---|
-| Arch Linux / CachyOS | **Probado** (Docker Engine 29.10, Compose 5.8) |
-| Debian / Ubuntu | No probado. El instalador reconoce la familia y muestra los comandos |
-| Fedora | No probado. Ídem |
-| openSUSE | No probado. Ídem |
+| Distribución | Estado | Hipervisores probados |
+|---|---|---|
+| Arch Linux / CachyOS | **Probado** (Docker Engine 29.10, Compose 5.8) | **KVM/QEMU** y **VirtualBox 7.x** (automatizado) |
+| Debian / Ubuntu | No probado. El instalador reconoce la familia y muestra los comandos | KVM / VirtualBox |
+| Fedora | No probado. Ídem | KVM / VirtualBox |
+| openSUSE | No probado. Ídem | KVM / VirtualBox |
 
-## 1. Requisitos que comprueba el gestor
+---
 
-El gestor se niega a desplegar si no se cumple alguno de estos requisitos:
+## 1. Requisitos del sistema anfitrión
 
-- **Docker Engine ≥ 28** en modo normal (rootful). En versiones anteriores se puede llegar desde la LAN a puertos publicados en `127.0.0.1`.
+El gestor (`./manager`) y el instalador (`scripts/linux/install.sh`) aplican comprobaciones estrictas antes de desplegar:
+
+- **Usuario normal (sin `sudo`):** El instalador se niega a ejecutarse bajo `sudo` directo. Pide privilegios únicamente en los pasos puntuales que los requieren (instalación del script de firewall o paquetes del sistema). Tanto Docker (mediante el grupo `docker`) como VirtualBox operan en el perfil de tu usuario.
+- **Docker Engine ≥ 28** en modo nativo (*rootful*). Versiones anteriores presentaban problemas de fuga de puertos desde la LAN hacia `127.0.0.1`.
 - **Docker Compose ≥ 2.24** (plugin v2: `docker compose`).
-- **Backend de firewall `iptables`** en Docker. Compruébalo con:
-
+- **Backend de firewall `iptables`:** Docker debe usar el driver `iptables` (incluso si corre sobre `iptables-nft`). Se rechaza el backend experimental `nftables` nativo de Docker:
   ```bash
-  docker info --format '{{.FirewallBackend.Driver}}'     # debe decir iptables
+  docker info --format '{{.FirewallBackend.Driver}}'     # debe responder iptables
   ```
+- **Sin Docker rootless ni Docker Desktop:** Docker Desktop corre dentro de su propia máquina virtual aislada, lo que elude el firewall del anfitrión.
+- **Python ≥ 3.10** (emplea exclusivamente la biblioteca estándar).
+- **Fuera de WSL:** Requiere un kernel Linux nativo con soporte de namespaces y filtrado de red.
+- **Requisitos si se utiliza VirtualBox:** VirtualBox ≥ 7.0.2 con módulos del kernel cargados (`vboxdrv`, `vboxnetflt`, `vboxnetadp`) y usuario perteneciente al grupo `vboxusers`.
 
-  `iptables` sobre nf_tables (iptables-nft) es válido. Lo que no está soportado es el backend `nftables` nativo de Docker.
-- **Sin Docker rootless ni Docker Desktop para Linux.** Docker Desktop publica los puertos desde su propia VM, fuera del firewall del anfitrión.
-- **Python ≥ 3.10.**
-- Fuera de WSL.
+---
 
-## 2. Docker por distribución
+## 2. Preparación por distribución
 
 ### Arch Linux / CachyOS (probado)
 
+Instala Docker, las dependencias del sistema y, opcionalmente, VirtualBox si eliges este hipervisor:
+
 ```bash
+# Dependencias base y Docker
 sudo pacman -S --needed docker docker-compose python iproute2 iptables curl
 sudo systemctl enable --now docker
-sudo usermod -aG docker "$USER"     # cierra sesión y vuelve a entrar
+sudo usermod -aG docker "$USER"
+
+# Si vas a usar VirtualBox en lugar de KVM:
+sudo pacman -S --needed virtualbox virtualbox-host-modules-arch
+# (O 'virtualbox-host-dkms' si usas un kernel alternativo)
+sudo usermod -aG vboxusers "$USER"
+sudo modprobe vboxdrv vboxnetflt vboxnetadp
 ```
+
+> Cierra la sesión y vuelve a iniciarla para que los grupos `docker` y `vboxusers` surtan efecto.
 
 ### Debian / Ubuntu (no probado)
 
-Los paquetes `docker.io` de la distribución pueden ser anteriores a la 28. Usa el repositorio oficial de Docker: https://docs.docker.com/engine/install/ (secciones Debian/Ubuntu). Instala los paquetes `docker-ce` y `docker-compose-plugin`, y después:
+Los paquetes de `docker.io` de las distribuciones suelen ser versiones desactualizadas. Instala los paquetes oficiales desde [docs.docker.com/engine/install/](https://docs.docker.com/engine/install/):
 
 ```bash
 sudo apt-get install -y python3 iproute2 iptables curl
@@ -47,42 +61,83 @@ docker version --format '{{.Server.Version}}'      # debe ser >= 28
 
 ### Fedora (no probado)
 
-Usa el repositorio `docker-ce`: https://docs.docker.com/engine/install/fedora/. El paquete `moby-engine` de Fedora no se ha evaluado. Los mismos pasos de `systemctl` y `usermod`.
+Utiliza el repositorio oficial `docker-ce` ([docs.docker.com/engine/install/fedora/](https://docs.docker.com/engine/install/fedora/)):
+
+```bash
+sudo dnf install -y python3 iproute iptables curl
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+```
+
+---
 
 ## 3. Hipervisor y red de laboratorio
 
-- [KVM/QEMU](kvm.md) (probado).
-- [VirtualBox](virtualbox.md).
+El proyecto requiere comunicar la máquina atacante Kali Linux con los contenedores vulnerables a través de una red aislada. Elige uno de los dos hipervisores soportados en Linux:
 
-Ambas guías terminan con la fase `network` del instalador, que deja `config/local.json` con:
-- la plataforma (`linux-kvm` o `linux-virtualbox`);
-- la IP de laboratorio del anfitrión;
-- el nombre de la interfaz.
+- **[KVM/QEMU](kvm.md)** (probado): Utiliza la red libvirt `pentestlab` (bridge `virbr-plab`).
+- **[VirtualBox](virtualbox.md)** (probado y automatizado en Arch Linux): Utiliza una red Host-only (`vboxnet0` o `vboxnetN`) con DHCP acotado y aislamiento de loopback en NAT.
 
-## 4. Firewall e imágenes
+Ambas opciones generan la configuración de red en `config/local.json` (`platform`, `ip`, `iface`).
+
+> [!TIP]
+> Si utilizas VirtualBox y ejecutas directamente `./manager install`, el gestor detectará la ausencia de red y configurará automáticamente la interfaz Host-only por ti.
+
+---
+
+## 4. Fases del instalador (`scripts/linux/install.sh`)
+
+En Linux, el instalador por fases se encarga de aprovisionar y validar cada capa del laboratorio:
+
+```bash
+scripts/linux/install.sh --phase <fase> [opciones]
+```
+
+| Fase | Función en Linux |
+|---|---|
+| `detect` | Identifica la distro, versión de Docker/Compose, backend de firewall, hipervisores presentes (KVM/VirtualBox) y espacio libre en disco. |
+| `deps` | Verifica e instala dependencias del anfitrión (`python3`, `iproute2`, `iptables`, `curl`). |
+| `network` | Configura la red aislada en KVM (`--hypervisor kvm`) o VirtualBox (`--hypervisor virtualbox`) y registra la IP en `config/local.json`. |
+| `firewall` | Instala `/usr/local/sbin/pentestlab-fw`, aplica sus cadenas iptables y configura una regla acotada en `sudoers`. |
+| `images` | Invoca `./manager install` para descargar las imágenes fijadas por digest, verificar recursos SHA-256 e iniciar el asistente de Kali VM en VirtualBox. |
+| `kali-vm` | Automatiza el registro, dimensionamiento (vCPU, RAM, VRAM), adaptadores y aislamiento de localhost para la VM de Kali en VirtualBox. |
+| `validate` | Ejecuta las comprobaciones de entorno de `./manager diagnose`. |
+| `uninstall` | Elimina del anfitrión todo lo anotado en `state/installer.json` (reglas iptables, regla sudoers y red del hipervisor). |
+
+---
+
+## 5. Firewall del laboratorio (`pentestlab-fw`)
+
+La fase `firewall` asegura que el tráfico entre el laboratorio, Kali y el anfitrión permanezca estrictamente controlado:
 
 ```bash
 scripts/linux/install.sh --phase firewall
-scripts/linux/install.sh --phase images        # equivale a ./manager install
 ```
 
-En la fase `firewall`:
-1. Copia `scripts/linux/pentestlab-fw.sh` a `/usr/local/sbin/pentestlab-fw`, con propietario root y permisos 0755.
-2. Pregunta si quieres una regla en `/etc/sudoers.d/pentestlab-fw` que permita a tu usuario ejecutar **solo** `pentestlab-fw verify` y `pentestlab-fw apply` sin contraseña. Sin ella, cada `./manager start` pide la contraseña de sudo. Para responder sin preguntas: `PLAB_SUDOERS=yes` o `PLAB_SUDOERS=no`.
-3. Si la interfaz de laboratorio ya existe, aplica y verifica las reglas. Si no, lo hará `./manager start` más adelante.
+1. **Instalación del script:** Copia `scripts/linux/pentestlab-fw.sh` a `/usr/local/sbin/pentestlab-fw` (propiedad de `root:root`, permisos `0755`).
+2. **Regla de sudoers acotada:** Ofrece crear `/etc/sudoers.d/pentestlab-fw` para permitir que tu usuario ejecute **únicamente** `pentestlab-fw verify` y `pentestlab-fw apply` sin introducir la contraseña de `sudo` en cada arranque. Si deseas responder desatendido: `PLAB_SUDOERS=yes` o `PLAB_SUDOERS=no`.
+3. **Aislamiento de la interfaz:** Aplica las reglas en las cadenas iptables (`PLAB-IN`, `PLAB-FWD`, `PLAB-IN6`). El firewall filtra el tráfico de la interfaz del laboratorio (sea `virbr-plab` en KVM o `vboxnetN` en VirtualBox), permitiendo a Kali acceder exclusivamente a los puertos publicados de los laboratorios y bloqueando cualquier intento de alcanzar la LAN o los servicios internos del anfitrión.
 
-El detalle de las reglas está en [firewall-linux.md](../networking/firewall-linux.md).
+Para más detalles sobre las reglas de filtrado, consulta [firewall-linux.md](../networking/firewall-linux.md).
 
-En la fase `images` se descargan unos 5 GB de imágenes, fijadas por digest, y el LDIF de Mutillidae, verificado por SHA-256. Es el único momento en que hace falta Internet.
+> Si actualizas el repositorio y cambia `pentestlab-fw.sh`, el hash SHA-256 no coincidirá y `./manager start` se bloqueará por seguridad hasta que vuelvas a ejecutar `scripts/linux/install.sh --phase firewall`.
 
-> Si actualizas el repositorio y cambia `scripts/linux/pentestlab-fw.sh`, la copia instalada deja de coincidir y `./manager start` se bloquea. Vuelve a ejecutar `scripts/linux/install.sh --phase firewall`.
+---
 
-## 5. Comprobar la instalación
+## 6. Verificación y pruebas de aislamiento
+
+Tras completar la instalación, valida el laboratorio con las herramientas integradas:
 
 ```bash
-scripts/linux/install.sh --phase validate      # ./manager diagnose
+# Diagnóstico general del gestor y entorno
+scripts/linux/install.sh --phase validate        # o: ./manager diagnose
+
+# Si usas VirtualBox, diagnóstico de requisitos de la VM
+scripts/linux/install.sh --phase kali-vm --check
+
+# Iniciar laboratorios y verificar conectividad interna
 ./manager start
 ./manager network-check
 ```
 
-Después, haz la [verificación desde Kali](../testing/pruebas.md#3-desde-la-vm-de-kali).
+Por último, arranca la máquina virtual de Kali y ejecuta la suite de pruebas desde la propia máquina atacante siguiendo la [guía de verificación desde Kali](../testing/pruebas.md#3-desde-la-vm-de-kali) para confirmar que el anfitrión es completamente inalcanzable por la red NAT.

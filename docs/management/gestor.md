@@ -31,14 +31,14 @@ No uses `docker compose up` directamente en `labs/<lab>/`. Te saltarías las com
 
 | Comando | Qué hace |
 |---|---|
-| `install [LAB...]` | Descarga las imágenes fijadas por digest y los recursos con SHA-256. Requiere Internet en el anfitrión |
+| `install [LAB...]` | Descarga las imágenes fijadas por digest, los recursos con SHA-256 y, en Linux con VirtualBox, automatiza la red y el paso de la VM de Kali (ver abajo) |
 | `start [LAB...]` | Comprobaciones, arranque y verificación (ver abajo) |
 | `stop [LAB...]` | Detiene los contenedores. Los datos se conservan |
 | `restart [LAB...]` | `stop` + `start` conservando los datos, también en modo efímero |
 | `reset-data [LAB...]` | **Destructivo.** Elimina los contenedores y volúmenes del laboratorio y lo vuelve a arrancar desde el estado inicial |
-| `reset [LAB...]` | **Destructivo.** Además, borra el estado generado (`state/<lab>.env`, `state/<lab>/`), vuelve a ejecutar `install` y arranca |
+| `reset [LAB...]` | **Destructivo.** Además, borra el estado generado (`state/<lab>.env`, `state/<lab>/`), vuelve a ejecutar `install` (incluyendo la comprobación de Kali) y arranca |
 | `update --check [LAB...]` | Consulta si hay versiones nuevas publicadas. No cambia nada |
-| `update [LAB...]` | Aplica el conjunto de versiones de `config/versions.json` y ofrece recrear los labs en marcha |
+| `update [LAB...]` | Aplica el conjunto de versiones de `config/versions.json`, vuelve a ejecutar `install` y ofrece recrear los labs en marcha |
 
 Ver [restauración](restauracion.md) y [actualizaciones](actualizaciones.md).
 
@@ -66,7 +66,7 @@ La zona horaria solo afecta a WebGoat. Con `auto` se toma de `/etc/localtime`.
 
 ### Opciones globales
 
-- `--yes`: responde "sí" a todas las confirmaciones, incluidas las destructivas. **Nunca** se salta una comprobación de seguridad.
+- `--yes`: responde "sí" a todas las confirmaciones, incluidas las destructivas. **Nunca** se salta una comprobación de seguridad. En `install`, propaga `ASSUME_YES=1` a las fases que invoca.
 - `--accept-port-suggestions` (en `start`, `restart`, `reset-data` y `reset`): acepta el puerto alternativo propuesto (ver abajo).
 
 ## 2. Menú interactivo
@@ -80,7 +80,7 @@ La zona horaria solo afecta a WebGoat. Con `auto` se toma de `/etc/localtime`.
 | 5 | Ver registros |
 | 6 | Restaurar datos (`reset-data`) |
 | 7 | Reconstruir desde cero (`reset`) |
-| 8 | Descargar o verificar imágenes (`install`) |
+| 8 | Descargar o verificar imágenes (`install`) y paso guiado de la VM de Kali |
 | 9 | Comprobar el aislamiento de red |
 | 10 | Diagnóstico completo |
 | 11 | Cambiar el puerto de un laboratorio |
@@ -90,7 +90,27 @@ La zona horaria solo afecta a WebGoat. Con `auto` se toma de `/etc/localtime`.
 
 Si un cambio de puerto no es válido, el menú lo revierte y no deja nada a medias.
 
-## 3. Qué hace `start`
+## 3. Qué hace `install`
+
+El ciclo de instalación implementado en el gestor (`lifecycle.py`) automatiza la preparación completa del laboratorio y de la máquina atacante en Linux con VirtualBox:
+
+1. **Descarga y verificación de imágenes Docker:**
+   - Consulta las imágenes fijadas por digest en `config/versions.json` para cada laboratorio solicitado y ejecuta `docker pull`.
+2. **Descarga y verificación de recursos adicionales:**
+   - Descarga recursos estáticos externos (como el archivo LDIF de Mutillidae) y valida su integridad mediante suma de verificación SHA-256.
+3. **Paso de la VM de Kali (`_kali_vm_step`):**
+   Tras descargar los contenedores, el gestor evalúa el entorno de virtualización:
+   - **Aprovisionamiento automático de red:** Si la plataforma no está definida en `config/local.json` (`platform is None`), el gestor ejecuta automáticamente `scripts/linux/install.sh --phase network --hypervisor virtualbox --yes`. Al terminar con éxito, recarga dinámicamente la configuración en caliente (`self.cfg = Config()`) sin requerir intervención manual previa.
+   - **Comprobación de plataforma y dependencias:** Valida que la plataforma activa sea `linux-virtualbox` y que el binario `VBoxManage` esté presente en el anfitrión. En otras plataformas (ej. KVM o Windows) o si falta VirtualBox, muestra un aviso informativo y continúa sin bloquear el proceso.
+   - **Detección de interactividad:** Comprueba si se dispone de terminal interactivo (`ui.interactive()`). En entornos desatendidos o scripts CI sin TTY, omite el paso con un aviso para evitar bloqueos.
+   - **Propagación de `--yes`:** Si el gestor se ejecutó con `./manager --yes install`, transmite `ASSUME_YES=1` al instalador.
+   - **Invocación desacoplada y tolerancia a fallos:** Lanza `scripts/linux/install.sh --phase kali-vm`.
+     - Si el usuario cancela voluntariamente (código `5`), el gestor emite un aviso (`ui.warn`), pero **no interrumpe el éxito de la instalación**: los contenedores del laboratorio quedan listos para su uso.
+     - Si ocurre algún error en la creación o verificación de la VM, el gestor avisa y sugiere el comando de diagnóstico (`--check`), manteniendo igualmente los laboratorios disponibles.
+
+> Dado que `reset` y `update` ejecutan internamente `install`, ambos comandos se benefician automáticamente de esta verificación y orquestación.
+
+## 4. Qué hace `start`
 
 La misma secuencia, en diagrama: [arquitectura](../architecture/README.md#qué-hace-start). Los estados que muestra `status` y cómo se pasa de uno a otro: [estados de un laboratorio](../architecture/README.md#estados-de-un-laboratorio).
 
@@ -122,7 +142,7 @@ La misma secuencia, en diagrama: [arquitectura](../architecture/README.md#qué-h
 
 Si algo falla, ejecuta `docker compose down` del laboratorio, que **conserva los volúmenes**, y termina con un código distinto de 0.
 
-## 4. Conflictos de puertos
+## 5. Conflictos de puertos
 
 Si un puerto configurado está ocupado en `127.0.0.1` o en la IP de laboratorio:
 
@@ -135,7 +155,7 @@ Si no aceptas, termina con código 1 sin publicar nada. **Nunca cambia un puerto
 
 Las conexiones en `TIME_WAIT` (por ejemplo, justo después de un `stop`) no cuentan como puerto ocupado.
 
-## 5. Códigos de salida
+## 6. Códigos de salida
 
 | Código | Significado |
 |---|---|
@@ -146,12 +166,15 @@ Las conexiones en `TIME_WAIT` (por ejemplo, justo después de un `stop`) no cuen
 | 4 | Falta una dependencia (Docker, Python, imágenes...) |
 | 5 | Cancelado: confirmación rechazada, o falta de TTY sin `--yes` en una operación destructiva |
 
-## 6. Archivos generados
+> En el paso de la VM de Kali durante `install`, si se cancela la confirmación interactiva (código 5), el gestor lo maneja como advertencia sin interrumpir el código de salida de los contenedores.
+
+## 7. Archivos generados
 
 | Archivo | Contenido |
 |---|---|
-| `config/local.json` | Tu configuración: red, puertos, persistencia, límites y zona horaria |
+| `config/local.json` | Tu configuración: red, puertos, persistencia, límites y zona horaria (aprovisionada automáticamente si falta al ejecutar `install`) |
 | `state/<lab>.env` | Variables para Compose (imágenes, puertos, IP, límites). Se regenera en cada operación; no lo edites |
 | `state/mutillidae/mutillidae.ldif` | LDIF oficial descargado y verificado |
 | `state/installer.json` | Lo que ha creado el instalador (para `--phase uninstall`) |
+| `state/kali-vm.json` | Registro de la VM de Kali creada o configurada en VirtualBox (`name`, `uuid`, `vdi`, `vbox`, `hostonly_iface`, `lab_ip`, `complete`). Generado durante el paso de la VM |
 | `state/*.log` | Registros de las sesiones de prueba de red |
